@@ -1,13 +1,13 @@
-title: HarrisShutter
+title: Image Tools
 url: https://enheragu.github.io
-baseurl: /HarrisShutter
+baseurl: /image-tools
 
 plugins:
   - jekyll-remote-theme
 
 remote_theme: enheragu/tool-pages-theme
 
-shared_assets_base: /HarrisShutter/assets/shared
+shared_assets_base: /image-tools/assets/shared
 
 defaults:
   - scope:
@@ -16,9 +16,22 @@ defaults:
     values:
       lang: en
       compact_mode: true
-      project: harris
-      tool_name: HarrisShutter
+      project: image-tools
+      tool_name: Image Tools
+      analytics_measurement_id: G-NB38N7JG5S
       footer_related_contextual: true
       with_tabs: true
+  - scope:
+      path: "HarrisShutter"
+    values:
+      header_supertitle: Image Tools
+      tool_name: HarrisShutter
+      with_image_card: true
+      with_lightbox_stage: true
+  - scope:
+      path: "ChronoSync"
+    values:
+      header_supertitle: Image Tools
+      tool_name: ChronoSync
       with_image_card: true
       with_lightbox_stage: true

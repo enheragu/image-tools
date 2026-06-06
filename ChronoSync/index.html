@@ -1,0 +1,169 @@
+---
+layout: tool_document
+redirect_path: /image-tools
+meta_title: ChronoSync — Temporal photo alignment
+meta_description: Align photos of the same location taken at different times using feature detection and compose them into a collage.
+og_title: ChronoSync — Temporal photo alignment
+icon_href: /image-tools/ChronoSync/assets/favicon.svg
+lang_mode: path
+webapp_application_category: PhotoApplication
+header_title: ChronoSync
+header_subtitle: Align and compare photos across time
+header_subtitle_id: subtitle
+intro_title: What is ChronoSync?
+intro_text: Upload photos of the same scene taken at different times. ChronoSync detects characteristic points in each photo, aligns them to a common frame, and composes them into a collage. Vertical photos are placed side by side; horizontal ones are stacked. Add optional date labels to each photo — read from EXIF metadata, editable if needed. All processing runs in your browser, nothing is uploaded.
+footer_credits_html: |
+  <p id="footer-author">Author: <a href="https://enheragu.github.io/" target="_blank" rel="noopener noreferrer">Enrique Heredia-Aguado</a></p>
+custom_css:
+  - css/style.css
+custom_js:
+  - js/i18n.js
+  - js/workers.js
+  - js/app.js
+---
+<!--THEME_BODY-->
+  <div class="content-shell">
+    <main>
+
+      <!-- Upload & per-photo config panel -->
+      <section class="panel panel-upload" id="panel-upload">
+        <div class="panel-header">
+          {% include widgets/widget_section_heading.html
+            tag='h2'
+            title_id='upload-title'
+            title_class='shared-panel-title'
+            title='Photos'
+            emphasis='subtle'
+          %}
+        </div>
+
+        <div class="panel-block upload-actions-row">
+          <div class="upload-file-cluster">
+            <label for="file-add" class="btn-secondary file-picker-btn" id="lbl-add-photos">Add photos</label>
+            <input id="file-add" class="file-input-native sr-only" type="file" accept="image/*" multiple>
+          </div>
+          <div class="upload-ref-cluster">
+            <label id="lbl-reference" for="select-reference">Reference image</label>
+            <select id="select-reference" class="ref-select" aria-label="Reference image"></select>
+          </div>
+          <div class="action-inline">
+            <button id="btn-align" class="btn-primary" type="button" disabled>Align photos</button>
+            <button id="btn-clear" class="btn-secondary" type="button" disabled>Clear all</button>
+          </div>
+        </div>
+
+        <div id="photo-cards-grid" class="photo-cards-grid"></div>
+
+        <div class="panel-block status-row">
+          <p class="hint" id="status-upload">Add at least two photos to begin.</p>
+          <div id="progress-bar-wrap" class="progress-bar-wrap hidden" aria-hidden="true">
+            <div id="progress-bar" class="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview panel: aligned images with keypoints -->
+      <section class="panel panel-preview hidden" id="panel-preview">
+        <div class="panel-header">
+          {% include widgets/widget_section_heading.html
+            tag='h2'
+            title_id='preview-title'
+            title_class='shared-panel-title'
+            title='Alignment preview'
+            emphasis='subtle'
+          %}
+        </div>
+        <div class="panel-block preview-controls-row">
+          <label class="toggle-label" for="toggle-keypoints">
+            <input id="toggle-keypoints" type="checkbox" checked>
+            <span id="lbl-show-keypoints">Show keypoints</span>
+          </label>
+          <div class="action-inline shared-btn-group shared-btn-group--2">
+            <button id="btn-compose" class="btn-primary" type="button">Compose collage</button>
+            <button id="btn-download" class="btn-secondary" type="button" disabled>Download collage</button>
+          </div>
+        </div>
+        <div id="aligned-grid" class="aligned-grid"></div>
+      </section>
+
+      <!-- Output edits panel -->
+      <section class="panel panel-output-edits hidden" id="panel-output-edits">
+        <div class="output-edit-panel">
+          <div class="panel-header subpanel-header output-edit-header">
+            {% include widgets/widget_section_heading.html
+              tag='h2'
+              title_id='output-edit-title'
+              title_class='shared-panel-title'
+              title='Output edits'
+              emphasis='subtle'
+            %}
+            <button id="btn-output-reset" class="btn-secondary btn-reset-edits" type="button" disabled>Reset edits</button>
+          </div>
+          <p class="hint output-edit-hint" id="output-edit-hint">Basic non-destructive adjustments before download.</p>
+          <div class="output-edit-grid range-skin-vivid">
+            <label class="shared-range-control" for="output-brightness">
+              <span class="shared-range-label-row"><span id="lbl-output-brightness">Brightness</span><strong id="val-output-brightness" class="shared-range-value">0</strong></span>
+              <input id="output-brightness" type="range" min="-100" max="100" step="1" value="0" disabled>
+            </label>
+            <label class="shared-range-control" for="output-contrast">
+              <span class="shared-range-label-row"><span id="lbl-output-contrast">Contrast</span><strong id="val-output-contrast" class="shared-range-value">0</strong></span>
+              <input id="output-contrast" type="range" min="-100" max="100" step="1" value="0" disabled>
+            </label>
+            <label class="shared-range-control" for="output-saturation">
+              <span class="shared-range-label-row"><span id="lbl-output-saturation">Saturation</span><strong id="val-output-saturation" class="shared-range-value">0</strong></span>
+              <input id="output-saturation" type="range" min="-100" max="100" step="1" value="0" disabled>
+            </label>
+          </div>
+        </div>
+
+        <div class="collage-wrap" id="collage-wrap">
+          <canvas id="collage-canvas"></canvas>
+          <div class="preview-actions">
+            <button class="btn-chart-expand btn-preview-icon shared-icon-btn shared-icon-btn-sm shared-icon-btn-accent btn-preview-expand" type="button" data-expand-target="collage-canvas" data-title-key="collage" aria-label="Expand collage" title="Expand"></button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Color picker dialog (reused from HarrisShutter pattern) -->
+  <dialog id="color-picker-dialog" class="panel custom-color-modal">
+    <div class="panel-header subpanel-header">
+      <h2 id="color-picker-title" class="shared-panel-title">Choose a color</h2>
+      <button id="btn-close-color" class="btn-preview-icon btn-modal-close shared-icon-btn shared-close-btn" type="button" aria-label="Close" title="Close">
+        <span aria-hidden="true" class="icon-close">
+          <svg viewBox="0 0 24 24" role="presentation" focusable="false">
+            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+    <div class="color-picker-body">
+      <div class="color-picker-map-wrap">
+        <span id="lbl-color-map" class="custom-color-map-label">Color map</span>
+        <div id="modal-sv" class="custom-color-map" role="slider" aria-labelledby="lbl-color-map" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" tabindex="0">
+          <span id="modal-sv-thumb" class="custom-color-map-thumb" aria-hidden="true"></span>
+        </div>
+      </div>
+      <label class="custom-hue-wrap" for="modal-hue">
+        <span id="lbl-modal-hue" class="custom-hue-label">Hue</span>
+        <input id="modal-hue" class="custom-hue-range" type="range" min="0" max="360" step="1" value="0" aria-label="Hue">
+      </label>
+      <div class="custom-rgb-row">
+        <label class="custom-rgb-field"><span class="custom-rgb-label">R</span><input id="modal-r" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Red"></label>
+        <label class="custom-rgb-field"><span class="custom-rgb-label">G</span><input id="modal-g" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Green"></label>
+        <label class="custom-rgb-field"><span class="custom-rgb-label">B</span><input id="modal-b" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Blue"></label>
+      </div>
+      <input id="modal-hex" class="custom-color-hex" type="text" value="#FFFFFF" inputmode="text" maxlength="7" spellcheck="false" aria-label="HEX">
+      <div id="lbl-modal-palette" class="custom-palette-label">Palette</div>
+      <div class="custom-palette-row" role="group" aria-labelledby="lbl-modal-palette">
+        <button class="palette-chip" type="button" data-palette-color="#FFFFFF" style="--chip:#FFFFFF"></button>
+        <button class="palette-chip" type="button" data-palette-color="#000000" style="--chip:#000000"></button>
+        <button class="palette-chip" type="button" data-palette-color="#58A6FF" style="--chip:#58A6FF"></button>
+        <button class="palette-chip" type="button" data-palette-color="#3FB950" style="--chip:#3FB950"></button>
+        <button class="palette-chip" type="button" data-palette-color="#D29922" style="--chip:#D29922"></button>
+        <button class="palette-chip" type="button" data-palette-color="#F85149" style="--chip:#F85149"></button>
+      </div>
+    </div>
+  </dialog>

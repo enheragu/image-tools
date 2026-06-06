@@ -1,1603 +1,229 @@
-(() => {
-  const CHANNELS = {
-    RGB: ['R', 'G', 'B'],
-    CYM: ['C', 'Y', 'M'],
-    CUSTOM: ['K1', 'K2', 'K3']
-  };
-
-  const MODE_SAMPLE_FILES = {
-    RGB: ['R.JPG', 'G.JPG', 'B.JPG'],
-    CYM: ['C.png', 'Y.png', 'M.png'],
-    CUSTOM: ['R.JPG', 'G.JPG', 'B.JPG']
-  };
-
-  const PRESETS = {
-    autumn: ['#C65D2E', '#E0A458', '#4B7A52'],
-    neon: ['#FF2E93', '#33FFD1', '#8B5CFF'],
-    earth: ['#7B5E3B', '#B08E5A', '#4D7A4A']
-  };
-
-  const i18nTranslations = {
-    en: {
-      subtitle: 'RGB/CYM channel fusion for Harris Shutter composites',
-      introTitle: 'What is Harris Shutter?',
-      introText: 'Harris Shutter was originally a device that could take an image alternating three different color filters in succesion. This way the exposure time of that image was split into three subexposures that would capture a different color. With digital images, a similar effect can be obtained by getting a single channel from three different images and merging them together. When there is change between the images, the mix of colors creates a unique visual effect depending on which channels get mixed. Depending on the illumination and colors in the scene the results follow an additive pattern in which red, green and blue can be differentiated; if the scene is brighter the result follows a more subtractive pattern in which cyan, yellow and magenta can be differentiated. This web tool lets you play with three images and both RGB and CYM color representation to achieve different results. As an extra there is a custom mode that lets you choose custom colors for each sub-image. Note that if no complementary colors are selected, the image can lose information as not the whole original spectrum will be covered. Once the image is generated, it can be finetuned with some basic adjustments before downloading.',
-      cfgTitle: 'Fusion setup',
-      mode: 'Color mode',
-      modeRGB: 'RGB',
-      modeCYM: 'CYM',
-      modeCustom: 'Custom',
-      presets: 'Presets',
-      presetAutumn: 'Autumn',
-      presetNeon: 'Neon',
-      presetEarth: 'Earth',
-      view: 'View',
-      browse: 'Browse',
-      noImageSelected: 'No image selected',
-      source: 'Image',
-      customColor: 'Custom color',
-      chooseColor: 'Choose a color',
-      colorMap: 'Color map',
-      hue: 'Hue',
-      palette: 'Palette',
-      dropHint: 'Drag & drop image here or tap to choose',
-      sampleHint: 'Drag to replace',
-      expand: 'Expand',
-      close: 'Close',
-      clear: 'Clear',
-      preview: 'Image preview',
-      viewOriginal: 'Original',
-      viewChannel: 'Channel',
-      prev: 'Previous image',
-      next: 'Next image',
-      outputEditTitle: 'Output edits',
-      outputEditHint: 'Basic non-destructive adjustments for the generated output before download.',
-      reset: 'Reset edits',
-      brightness: 'Brightness',
-      contrast: 'Contrast',
-      temperature: 'Temperature',
-      tint: 'Tint',
-      saturation: 'Saturation',
-      gamma: 'Gamma',
-      generate: 'Generate fusion',
-      download: 'Download image',
-      output: 'Output',
-      statusReady: 'Load three images and generate.',
-      statusNeedImages: 'Please load all three images.',
-      statusNeedUnique: 'Each source must be assigned to a different channel.',
-      statusDone: (w, h, mode) => `Fusion generated: ${w}×${h} (${mode}).`,
-      footerSource: 'HR python version:',
-      footerAuthor: 'Author:'
-    },
-    es: {
-      subtitle: 'Fusión de canales RGB/CYM para composiciones Harris Shutter',
-      introTitle: '¿Qué es Harris Shutter?',
-      introText: 'El obturador de Harris era, originalmente, un dispositivo capaz de capturar una imagen alternando una sucesión de tres filtros de color diferentes. De esta manera, el tiempo de exposición de la imagen se divide en tres subexposiciones, cada una registrando la escena en una tonalidad diferente. En fotografía digital, un efecto similar puede lograrse tomando un canal único de tres imágenes diferentes y combinándolos. Cuando hay movimiento o cambios entre las imágenes, la mezcla de colores produce un efecto visual característico que depende de qué canales se combinen. Según la iluminación y los colores de la escena, los resultados pueden seguir un patrón aditivo, donde se distinguen más claramente el rojo, el verde y el azul; o, si la escena es más brillante, un patrón de color sustractivo, en el que se diferencian el cian, el amarillo y el magenta. Esta herramienta permite experimentar con tres imágenes y con las representaciones de color RGB y CYM para obtener distintos resultados. Como extra tienes un modo personalizable, donde pudes elegir otros colores a extraer. Ten en cuenta que si no se eligen colores complementarios la imagen podría perder información al no cubrir por completo el espectro original de la escena. Una vez generada, la imagen resultante puede ajustarse con algunas correcciones básicas antes de descargarla.',
-      cfgTitle: 'Configuración de fusión',
-      mode: 'Modo de color',
-      modeRGB: 'RGB',
-      modeCYM: 'CYM',
-      modeCustom: 'Libre',
-      presets: 'Presets',
-      presetAutumn: 'Otoño',
-      presetNeon: 'Neón',
-      presetEarth: 'Tierra',
-      view: 'Vista',
-      browse: 'Examinar',
-      noImageSelected: 'Ninguna imagen seleccionada',
-      source: 'Imagen',
-      customColor: 'Color libre',
-      chooseColor: 'Elegir color',
-      colorMap: 'Mapa de color',
-      hue: 'Tono',
-      palette: 'Paleta',
-      dropHint: 'Arrastra imagen aquí o toca para elegir',
-      sampleHint: 'Arrastra para reemplazar',
-      expand: 'Ampliar',
-      close: 'Cerrar',
-      clear: 'Borrar',
-      preview: 'Vista ampliada',
-      viewOriginal: 'Original',
-      viewChannel: 'Canal',
-      prev: 'Imagen anterior',
-      next: 'Imagen siguiente',
-      outputEditTitle: 'Edición de salida',
-      outputEditHint: 'Ajustes básicos no destructivos sobre la salida generada antes de descargar.',
-      reset: 'Restablecer ajustes',
-      brightness: 'Brillo',
-      contrast: 'Contraste',
-      temperature: 'Temperatura',
-      tint: 'Tinte',
-      saturation: 'Saturación',
-      gamma: 'Gamma',
-      generate: 'Generar fusión',
-      download: 'Descargar imagen',
-      output: 'Salida',
-      statusReady: 'Carga tres imágenes y genera.',
-      statusNeedImages: 'Carga las tres imágenes.',
-      statusNeedUnique: 'Cada fuente debe asignarse a un canal distinto.',
-      statusDone: (w, h, mode) => `Fusión generada: ${w}×${h} (${mode}).`,
-      footerSource: 'Version python de HR:',
-      footerAuthor: 'Autor:'
-    }
-  };
-
-  const i18nApi = window.SharedI18nCore.createI18n(i18nTranslations);
-
-  const state = {
+(function () {
+  var state = {
     lang: 'en',
-    theme: 'dark',
-    mode: 'RGB',
-    viewMode: 'original',
-    slots: [
-      { image: null, fileName: '', isSample: false },
-      { image: null, fileName: '', isSample: false },
-      { image: null, fileName: '', isSample: false }
-    ],
-    outputReady: false,
-    outputBaseImageData: null,
-    outputAdjustments: {
-      brightness: 0,
-      contrast: 0,
-      temperature: 0,
-      tint: 0,
-      saturation: 0,
-      gamma: 0
+    theme: window.SharedUiCore ? window.SharedUiCore.getPreferredTheme() : (localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')),
+    tools: []
+  };
+
+  var tools = [
+    {
+      key: 'harrisShutter',
+      section: 'image-tools',
+      href: '/image-tools/HarrisShutter/',
+      imageDark: '/image-tools/HarrisShutter/assets/og-image.svg',
+      imageLight: '/image-tools/HarrisShutter/assets/og-image-light.svg'
     },
-    sampleRequestIds: [0, 0, 0],
-    customColors: ['#FF4D4D', '#A66B2F', '#40B56A'],
-    customPreset: null,
-    activeCustomSlot: null,
-    pickerHsv: { h: 0, s: 0, v: 100 },
-    modalItemKey: null,
-    outputRenderMode: 'idle',
-    outputPreviewScale: 0.42,
-    outputPreviewMinScale: 0.12,
-    outputPreviewMaxPixels: 7000,
-    outputPreviewFastMaxPixels: 5000,
-    outputCurrentPreviewMaxPixels: 7000,
-    outputPreviewMaxDimension: 256,
-    outputPreviewMinIntervalMs: 64,
-    outputInteractionActive: false,
-    outputInteractionTimer: 0,
-    outputPreviewThrottleTimer: 0,
-    outputLastPreviewAt: 0,
-    outputRenderScheduler: null,
-    outputLastPreviewSignature: '',
-    outputLastQueuedPreviewSignature: '',
-    outputLastFullSignature: ''
-  };
-
-  const dom = {
-    themeButton: document.getElementById('btn-theme'),
-    subtitle: document.getElementById('subtitle'),
-    introTitle: document.getElementById('intro-title'),
-    introText: document.getElementById('intro-text'),
-    cfgTitle: document.getElementById('cfg-title'),
-    modeLabel: document.getElementById('lbl-mode'),
-    modeButtons: [
-      document.getElementById('btn-mode-rgb'),
-      document.getElementById('btn-mode-cym'),
-      document.getElementById('btn-mode-custom')
-    ],
-    customPresetsLabel: document.getElementById('lbl-custom-presets'),
-    customPresetButtons: Array.from(document.querySelectorAll('[data-custom-preset]')),
-    globalViewLabel: document.getElementById('lbl-global-view'),
-    allViewButtons: Array.from(document.querySelectorAll('[data-view-mode]')),
-    srcTitle: [
-      document.getElementById('src1-title'),
-      document.getElementById('src2-title'),
-      document.getElementById('src3-title')
-    ],
-    srcDropHint: [
-      document.getElementById('src1-drop-hint'),
-      document.getElementById('src2-drop-hint'),
-      document.getElementById('src3-drop-hint')
-    ],
-    sourceCards: Array.from(document.querySelectorAll('.source-card[data-slot]')),
-    sourceGrid: document.getElementById('source-grid'),
-    workflowSymbols: document.querySelector('.workflow-symbols'),
-    expandButtons: Array.from(document.querySelectorAll('.btn-preview-expand')),
-    clearButtons: Array.from(document.querySelectorAll('.btn-preview-delete')),
-    fileInputs: [
-      document.getElementById('file-0'),
-      document.getElementById('file-1'),
-      document.getElementById('file-2')
-    ],
-    fileLabels: [
-      document.getElementById('file-label-0'),
-      document.getElementById('file-label-1'),
-      document.getElementById('file-label-2')
-    ],
-    fileNameDisplays: [
-      document.getElementById('file-name-0'),
-      document.getElementById('file-name-1'),
-      document.getElementById('file-name-2')
-    ],
-    assignSelects: [
-      document.getElementById('assign-0'),
-      document.getElementById('assign-1'),
-      document.getElementById('assign-2')
-    ],
-    customSwatches: [
-      document.getElementById('custom-swatch-0'),
-      document.getElementById('custom-swatch-1'),
-      document.getElementById('custom-swatch-2')
-    ],
-    customColorControls: Array.from(document.querySelectorAll('.custom-color-control[data-custom-slot]')),
-    previewCanvases: [
-      document.getElementById('preview-0'),
-      document.getElementById('preview-1'),
-      document.getElementById('preview-2')
-    ],
-    generateButton: document.getElementById('btn-generate'),
-    downloadButton: document.getElementById('btn-download'),
-    status: document.getElementById('status'),
-    outputTitle: document.getElementById('out-title'),
-    outputCanvas: document.getElementById('output-canvas'),
-    imageModalOverlay: document.getElementById('image-modal-overlay'),
-    imageModalCanvas: document.getElementById('image-modal-canvas'),
-    imageModalTitle: document.getElementById('image-modal-title'),
-    imageModalViewLabel: document.getElementById('lbl-image-modal-view'),
-    imageModalViewGroup: document.getElementById('image-modal-view-group'),
-    imagePrevButton: document.getElementById('btn-image-prev'),
-    imageNextButton: document.getElementById('btn-image-next'),
-    closeImageModalButton: document.getElementById('btn-close-image-modal'),
-    outputEditTitle: document.getElementById('output-edit-title'),
-    outputEditHint: document.getElementById('output-edit-hint'),
-    outputResetButton: document.getElementById('btn-output-reset'),
-    outputBrightnessLabel: document.getElementById('lbl-output-brightness'),
-    outputContrastLabel: document.getElementById('lbl-output-contrast'),
-    outputTemperatureLabel: document.getElementById('lbl-output-temperature'),
-    outputTintLabel: document.getElementById('lbl-output-tint'),
-    outputSaturationLabel: document.getElementById('lbl-output-saturation'),
-    outputGammaLabel: document.getElementById('lbl-output-gamma'),
-    outputBrightnessValue: document.getElementById('val-output-brightness'),
-    outputContrastValue: document.getElementById('val-output-contrast'),
-    outputTemperatureValue: document.getElementById('val-output-temperature'),
-    outputTintValue: document.getElementById('val-output-tint'),
-    outputSaturationValue: document.getElementById('val-output-saturation'),
-    outputGammaValue: document.getElementById('val-output-gamma'),
-    outputBrightness: document.getElementById('output-brightness'),
-    outputContrast: document.getElementById('output-contrast'),
-    outputTemperature: document.getElementById('output-temperature'),
-    outputTint: document.getElementById('output-tint'),
-    outputSaturation: document.getElementById('output-saturation'),
-    outputGamma: document.getElementById('output-gamma'),
-    footerSource: document.getElementById('footer-source'),
-    footerAuthor: document.getElementById('footer-author'),
-    colorPickerDialog: document.getElementById('color-picker-dialog'),
-    btnColorPickerClose: document.getElementById('btn-close-color'),
-    colorPickerTitle: document.getElementById('color-picker-title'),
-    colorMapLabel: document.getElementById('lbl-color-map'),
-    colorHueLabel: document.getElementById('lbl-modal-hue'),
-    colorPaletteLabel: document.getElementById('lbl-modal-palette'),
-    modalSv: document.getElementById('modal-sv'),
-    modalSvThumb: document.getElementById('modal-sv-thumb'),
-    modalHue: document.getElementById('modal-hue'),
-    modalHex: document.getElementById('modal-hex'),
-    modalR: document.getElementById('modal-r'),
-    modalG: document.getElementById('modal-g'),
-    modalB: document.getElementById('modal-b'),
-    modalPaletteChips: Array.from(document.querySelectorAll('#color-picker-dialog .palette-chip'))
-  };
-
-  // SharedImageCard instances (one per source slot), initialised in init()
-  let imageCards = [];
-
-  function normalizeHexColor(value, fallback = '#808080') {
-    const raw = String(value || '').trim().replace(/^#/, '');
-    const expanded = raw.length === 3 ? raw.split('').map((ch) => `${ch}${ch}`).join('') : raw;
-    if (!/^[0-9a-fA-F]{6}$/.test(expanded)) return fallback.toUpperCase();
-    return `#${expanded.toUpperCase()}`;
-  }
-
-  function hexToRgb(hex) {
-    const normalized = normalizeHexColor(hex);
-    return [
-      parseInt(normalized.slice(1, 3), 16),
-      parseInt(normalized.slice(3, 5), 16),
-      parseInt(normalized.slice(5, 7), 16)
-    ];
-  }
-
-  function rgbToHex(r, g, b) {
-    const clamp = (v) => Math.max(0, Math.min(255, Math.round(Number(v) || 0)));
-    return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`.toUpperCase();
-  }
-
-  function rgbToHsv(r, g, b) {
-    const rn = (r || 0) / 255;
-    const gn = (g || 0) / 255;
-    const bn = (b || 0) / 255;
-    const max = Math.max(rn, gn, bn);
-    const min = Math.min(rn, gn, bn);
-    const delta = max - min;
-
-    let h = 0;
-    if (delta !== 0) {
-      if (max === rn) h = ((gn - bn) / delta) % 6;
-      else if (max === gn) h = (bn - rn) / delta + 2;
-      else h = (rn - gn) / delta + 4;
-      h = Math.round(h * 60);
-      if (h < 0) h += 360;
+    {
+      key: 'chronoSync',
+      section: 'image-tools',
+      href: '/image-tools/ChronoSync/',
+      imageDark: '/image-tools/ChronoSync/assets/og-image.svg',
+      imageLight: '/image-tools/ChronoSync/assets/og-image-light.svg'
     }
+  ];
 
-    const s = max === 0 ? 0 : (delta / max) * 100;
-    const v = max * 100;
-    return { h, s, v };
-  }
-
-  function hsvToRgb(h, s, v) {
-    const hh = ((Number(h) % 360) + 360) % 360;
-    const ss = Math.max(0, Math.min(100, Number(s))) / 100;
-    const vv = Math.max(0, Math.min(100, Number(v))) / 100;
-    const c = vv * ss;
-    const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
-    const m = vv - c;
-    let r1 = 0;
-    let g1 = 0;
-    let b1 = 0;
-
-    if (hh < 60) [r1, g1, b1] = [c, x, 0];
-    else if (hh < 120) [r1, g1, b1] = [x, c, 0];
-    else if (hh < 180) [r1, g1, b1] = [0, c, x];
-    else if (hh < 240) [r1, g1, b1] = [0, x, c];
-    else if (hh < 300) [r1, g1, b1] = [x, 0, c];
-    else [r1, g1, b1] = [c, 0, x];
-
-    return [
-      Math.round((r1 + m) * 255),
-      Math.round((g1 + m) * 255),
-      Math.round((b1 + m) * 255)
-    ];
-  }
-
-  function syncModalColorMapUI() {
-    if (!dom.modalSv || !dom.modalSvThumb) return;
-    const h = Math.max(0, Math.min(360, Number(state.pickerHsv.h) || 0));
-    const s = Math.max(0, Math.min(100, Number(state.pickerHsv.s) || 0));
-    const v = Math.max(0, Math.min(100, Number(state.pickerHsv.v) || 0));
-
-    dom.modalSv.style.setProperty('--picker-hue', `${h}deg`);
-    dom.modalSvThumb.style.left = `${s}%`;
-    dom.modalSvThumb.style.top = `${100 - v}%`;
-    dom.modalSv.setAttribute('aria-valuenow', String(Math.round(s)));
-    dom.modalSv.setAttribute('aria-valuetext', `S ${Math.round(s)} V ${Math.round(v)}`);
-    if (dom.modalHue && document.activeElement !== dom.modalHue) {
-      dom.modalHue.value = String(Math.round(h));
+  var LANDING_SECTIONS = [
+    {
+      sectionId: 'image-tools',
+      gridId: 'tools-grid',
+      catalogUrl: '/image-tools/tools-catalog.json'
     }
+  ];
+
+  function readLangFromUrl() {
+    if (window.SharedUiCore) return window.SharedUiCore.readLangFromUrl('en');
+    var params = new URLSearchParams(window.location.search || '');
+    var lang = (params.get('lang') || '').toLowerCase();
+    return (lang === 'es' || lang === 'en') ? lang : 'en';
   }
 
-  function applyColorFromPicker(invalidate = true) {
-    if (state.activeCustomSlot === null) return;
-    const [r, g, b] = hsvToRgb(state.pickerHsv.h, state.pickerHsv.s, state.pickerHsv.v);
-    const hex = rgbToHex(r, g, b);
-    state.customPreset = null;
-    syncCustomPresetButtons();
-    setCustomColor(state.activeCustomSlot, hex, { invalidate });
-  }
-
-  function clampByte(value) {
-    return Math.max(0, Math.min(255, Math.round(value)));
-  }
-
-  function fillAssignOptions() {
-    const channels = CHANNELS[state.mode];
-    dom.assignSelects.forEach((select, idx) => {
-      const current = select.value;
-      select.innerHTML = '';
-      channels.forEach((ch) => {
-        const option = document.createElement('option');
-        option.value = ch;
-        option.textContent = ch;
-        select.appendChild(option);
-      });
-      if (channels.includes(current)) {
-        select.value = current;
-      } else {
-        select.value = channels[idx] || channels[0];
-      }
-    });
-    applyAssignSelectStyles();
-  }
-
-  function applyAssignSelectStyles() {
-    if (state.mode === 'CUSTOM') {
-      dom.assignSelects.forEach((select) => {
-        select.classList.remove('channel-r', 'channel-g', 'channel-b', 'channel-c', 'channel-y', 'channel-m');
-      });
-      return;
-    }
-    dom.assignSelects.forEach((select) => {
-      const value = (select.value || '').toLowerCase();
-      select.classList.remove('channel-r', 'channel-g', 'channel-b', 'channel-c', 'channel-y', 'channel-m');
-      if (value) select.classList.add(`channel-${value}`);
-    });
-  }
-
-  function syncViewButtons() {
-    dom.allViewButtons.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.viewMode === state.viewMode);
-    });
-  }
-
-  function syncCustomPresetButtons() {
-    dom.customPresetButtons.forEach((btn) => {
-      btn.classList.toggle('active', state.mode === 'CUSTOM' && state.customPreset === btn.dataset.customPreset);
-    });
-  }
-
-  function syncCustomColorControls() {
-    state.customColors.forEach((color, index) => {
-      const normalized = normalizeHexColor(color, '#808080');
-      state.customColors[index] = normalized;
-      if (dom.customSwatches[index]) {
-        dom.customSwatches[index].style.setProperty('--swatch', normalized);
-      }
-    });
-
-    if (state.activeCustomSlot !== null && state.activeCustomSlot >= 0) {
-      const color = state.customColors[state.activeCustomSlot];
-      const [r, g, b] = hexToRgb(color);
-      state.pickerHsv = rgbToHsv(r, g, b);
-      syncModalColorMapUI();
-      if (dom.modalHex && document.activeElement !== dom.modalHex) dom.modalHex.value = color;
-      if (dom.modalR && document.activeElement !== dom.modalR) dom.modalR.value = String(r);
-      if (dom.modalG && document.activeElement !== dom.modalG) dom.modalG.value = String(g);
-      if (dom.modalB && document.activeElement !== dom.modalB) dom.modalB.value = String(b);
-    }
-  }
-
-  function syncModeButtons() {
-    dom.modeButtons.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.colorMode === state.mode);
-    });
-    document.body.classList.toggle('mode-custom', state.mode === 'CUSTOM');
-    syncCustomPresetButtons();
-    syncCustomColorControls();
-  }
-
-  function applyTranslations() {
-    const t = i18nApi.getCopy(state.lang);
-    dom.subtitle.textContent = t.subtitle;
-    dom.introTitle.textContent = t.introTitle;
-    dom.introText.textContent = t.introText;
-    dom.cfgTitle.textContent = t.cfgTitle;
-    dom.modeLabel.textContent = t.mode;
-
-    dom.modeButtons.forEach((btn) => {
-      const mode = btn?.dataset.colorMode;
-      if (mode === 'RGB') btn.textContent = t.modeRGB;
-      if (mode === 'CYM') btn.textContent = t.modeCYM;
-      if (mode === 'CUSTOM') btn.textContent = t.modeCustom;
-    });
-
-    if (dom.customPresetsLabel) dom.customPresetsLabel.textContent = t.presets;
-    dom.customPresetButtons.forEach((btn) => {
-      const preset = btn.dataset.customPreset;
-      if (preset === 'autumn') btn.textContent = t.presetAutumn;
-      if (preset === 'neon') btn.textContent = t.presetNeon;
-      if (preset === 'earth') btn.textContent = t.presetEarth;
-    });
-
-    if (dom.globalViewLabel) dom.globalViewLabel.textContent = t.view;
-    if (dom.imageModalViewLabel) dom.imageModalViewLabel.textContent = t.view;
-
-    dom.fileLabels.forEach((label) => {
-      if (label) label.textContent = t.browse;
-    });
-
-    dom.srcTitle.forEach((el, i) => {
-      if (el) el.textContent = `${t.source} ${i + 1}`;
-    });
-
-    dom.srcDropHint.forEach((el, i) => {
-      if (!el) return;
-      el.textContent = state.slots[i].isSample ? t.sampleHint : t.dropHint;
-    });
-
-    dom.expandButtons.forEach((btn) => {
-      btn.setAttribute('aria-label', t.expand);
-      btn.setAttribute('title', t.expand);
-    });
-
-    dom.clearButtons.forEach((btn) => {
-      btn.setAttribute('aria-label', t.clear);
-      btn.setAttribute('title', t.clear);
-    });
-
-    if (dom.closeImageModalButton) {
-      dom.closeImageModalButton.setAttribute('aria-label', t.close);
-      dom.closeImageModalButton.setAttribute('title', t.close);
-    }
-    if (dom.imagePrevButton) {
-      dom.imagePrevButton.setAttribute('aria-label', t.prev);
-      dom.imagePrevButton.setAttribute('title', t.prev);
-    }
-    if (dom.imageNextButton) {
-      dom.imageNextButton.setAttribute('aria-label', t.next);
-      dom.imageNextButton.setAttribute('title', t.next);
-    }
-    if (dom.btnColorPickerClose) {
-      dom.btnColorPickerClose.setAttribute('aria-label', t.close);
-      dom.btnColorPickerClose.setAttribute('title', t.close);
-    }
-
-    if (dom.colorPickerTitle) dom.colorPickerTitle.textContent = t.chooseColor;
-    if (dom.colorMapLabel) dom.colorMapLabel.textContent = t.colorMap;
-    if (dom.colorHueLabel) dom.colorHueLabel.textContent = t.hue;
-    if (dom.colorPaletteLabel) dom.colorPaletteLabel.textContent = t.palette;
-
-    if (dom.outputEditTitle) dom.outputEditTitle.textContent = t.outputEditTitle;
-    if (dom.outputEditHint) dom.outputEditHint.textContent = t.outputEditHint;
-    if (dom.outputResetButton) dom.outputResetButton.textContent = t.reset;
-
-    if (dom.outputBrightnessLabel) dom.outputBrightnessLabel.textContent = t.brightness;
-    if (dom.outputContrastLabel) dom.outputContrastLabel.textContent = t.contrast;
-    if (dom.outputTemperatureLabel) dom.outputTemperatureLabel.textContent = t.temperature;
-    if (dom.outputTintLabel) dom.outputTintLabel.textContent = t.tint;
-    if (dom.outputSaturationLabel) dom.outputSaturationLabel.textContent = t.saturation;
-    if (dom.outputGammaLabel) dom.outputGammaLabel.textContent = t.gamma;
-
-    if (dom.generateButton) dom.generateButton.textContent = t.generate;
-    if (dom.downloadButton) dom.downloadButton.textContent = t.download;
-    if (dom.outputTitle) dom.outputTitle.textContent = t.output;
-
-    if (dom.footerSource) {
-      dom.footerSource.childNodes[0].nodeValue = `${t.footerSource} `;
-    }
-    if (dom.footerAuthor) {
-      dom.footerAuthor.childNodes[0].nodeValue = `${t.footerAuthor} `;
-    }
-
-    updateVisibleFileNames();
-    if (!state.outputReady) {
-      setStatus('muted', t.statusReady);
-    }
-  }
-
-  function initShell() {
-    const shell = window.SharedToolPageShell.initToolPage({
-      fallbackLang: 'en',
-      i18nApi: i18nApi,
-      onApplyLanguage: (copy, lang) => {
-        state.lang = lang;
-        applyTranslations();
-      },
-      onApplyTheme: (theme) => {
-        state.theme = theme;
-        window.SharedUiCore?.setThemeForDocument(theme, { themeButtonId: 'btn-theme', syncDataTheme: true });
-      },
-    });
-    state.lang = shell.lang;
-    state.theme = shell.theme;
-    shell.applyTheme();
-    applyTranslations();
-  }
-
-  function setStatus(type, text) {
-    if (!dom.status) return;
-    dom.status.textContent = text;
-    if (type === 'error') dom.status.dataset.type = 'error';
-    else if (type === 'ok') dom.status.dataset.type = 'ok';
-    else dom.status.dataset.type = '';
-  }
-
-  function updateVisibleFileNames() {
-    const t = i18nApi.getCopy(state.lang);
-    state.slots.forEach((slot, index) => {
-      const text = slot.fileName || t.noImageSelected;
-      if (dom.fileNameDisplays[index]) dom.fileNameDisplays[index].textContent = text;
-    });
-  }
-
-  function updateDropHints() {
-    const t = i18nApi.getCopy(state.lang);
-    state.slots.forEach((slot, index) => {
-      const card = dom.sourceCards[index];
-      if (card) {
-        card.classList.toggle('has-image', Boolean(slot.image));
-        card.classList.toggle('has-sample', Boolean(slot.isSample));
-      }
-      if (dom.srcDropHint[index]) {
-        dom.srcDropHint[index].textContent = slot.isSample ? t.sampleHint : t.dropHint;
-      }
-    });
-  }
-
-  function drawImageToCanvas(img, canvas) {
-    const ctx = canvas.getContext('2d');
-    const width = img.width;
-    const height = img.height;
-    canvas.width = width;
-    canvas.height = height;
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
-    requestAnimationFrame(updateWorkflowSymbolsPosition);
-  }
-
-  function getPreviewRenderSize(img, canvas) {
-    const cssWidth = Math.max(280, Math.round(canvas.clientWidth || 320));
-    const targetWidth = Math.max(280, Math.min(960, Math.round(cssWidth * Math.min(window.devicePixelRatio || 1, 1.75))));
-    const scale = Math.min(1, targetWidth / img.width);
-    return {
-      width: Math.max(1, Math.round(img.width * scale)),
-      height: Math.max(1, Math.round(img.height * scale))
-    };
-  }
-
-  function drawPreviewImageToCanvas(img, canvas) {
-    const ctx = canvas.getContext('2d');
-    const { width, height } = getPreviewRenderSize(img, canvas);
-    canvas.width = width;
-    canvas.height = height;
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(img, 0, 0, width, height);
-    requestAnimationFrame(updateWorkflowSymbolsPosition);
-  }
-
-  function drawTintedChannelView(img, canvas, tint, options = {}) {
-    const fullSize = Boolean(options.fullSize);
-    const size = fullSize ? { width: img.width, height: img.height } : getPreviewRenderSize(img, canvas);
-    const { width, height } = size;
-
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-
-    const tmp = document.createElement('canvas');
-    tmp.width = width;
-    tmp.height = height;
-    const tctx = tmp.getContext('2d', { willReadFrequently: true });
-    tctx.drawImage(img, 0, 0, width, height);
-    const src = tctx.getImageData(0, 0, width, height);
-    const out = ctx.createImageData(width, height);
-
-    const tr = tint[0] / 255;
-    const tg = tint[1] / 255;
-    const tb = tint[2] / 255;
-
-    for (let i = 0; i < src.data.length; i += 4) {
-      const r = src.data[i];
-      const g = src.data[i + 1];
-      const b = src.data[i + 2];
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      out.data[i] = clampByte(lum * tr);
-      out.data[i + 1] = clampByte(lum * tg);
-      out.data[i + 2] = clampByte(lum * tb);
-      out.data[i + 3] = 255;
-    }
-
-    ctx.putImageData(out, 0, 0);
-    requestAnimationFrame(updateWorkflowSymbolsPosition);
-  }
-
-  function getSlotTint(slotIndex) {
-    if (state.mode === 'CUSTOM') {
-      return hexToRgb(state.customColors[slotIndex]);
-    }
-    const assign = dom.assignSelects[slotIndex]?.value;
-    if (state.mode === 'RGB') {
-      if (assign === 'R') return [255, 0, 0];
-      if (assign === 'G') return [0, 255, 0];
-      return [0, 0, 255];
-    }
-    if (assign === 'C') return [0, 255, 255];
-    if (assign === 'Y') return [255, 255, 0];
-    return [255, 0, 255];
-  }
-
-  function renderSourcePreview(slotIndex) {
-    const slot = state.slots[slotIndex];
-    const canvas = dom.previewCanvases[slotIndex];
-    if (!slot?.image || !canvas) return;
-    if (state.viewMode === 'channel') {
-      drawTintedChannelView(slot.image, canvas, getSlotTint(slotIndex));
-      return;
-    }
-    drawPreviewImageToCanvas(slot.image, canvas);
-  }
-
-  function renderAllSourcePreviews() {
-    state.slots.forEach((_slot, idx) => renderSourcePreview(idx));
-  }
-
-  function invalidateOutputForInputChange() {
-    state.outputReady = false;
-    state.outputBaseImageData = null;
-    dom.downloadButton.disabled = true;
-    setOutputEditControlsEnabled(false);
-    setStatus('muted', i18n[state.lang].statusReady);
-  }
-
-  function setSlotImage(slotIndex, img, fileName, isSample) {
-    if (!isSample) {
-      // Invalidate pending sample loads so they cannot overwrite user-selected files.
-      state.sampleRequestIds[slotIndex] += 1;
-    }
-    state.slots[slotIndex] = {
-      image: img,
-      fileName: fileName || '',
-      isSample: Boolean(isSample)
-    };
-    renderSourcePreview(slotIndex);
-    updateVisibleFileNames();
-    updateDropHints();
-    invalidateOutputForInputChange();
-    // Sync SharedImageCard's internal state for sample loads (user loads are synced via onLoad callback)
-    if (isSample && imageCards[slotIndex]) {
-      imageCards[slotIndex].setImage(img, fileName || '');
-    }
-  }
-
-  function clearSlot(slotIndex) {
-    state.slots[slotIndex] = { image: null, fileName: '', isSample: false };
-    const canvas = dom.previewCanvases[slotIndex];
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    updateVisibleFileNames();
-    updateDropHints();
-    invalidateOutputForInputChange();
-    requestAnimationFrame(updateWorkflowSymbolsPosition);
-  }
-
-  function loadImageFromUrl(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
-
-  async function loadSampleIntoSlot(slotIndex, fileName) {
-    const requestId = state.sampleRequestIds[slotIndex] + 1;
-    state.sampleRequestIds[slotIndex] = requestId;
-
-    const candidates = [
-      `media/raw/${fileName}`,
-      `/HarrisShutter/media/raw/${fileName}`,
-      `https://enheragu.github.io/HarrisShutter/media/raw/${fileName}`
-    ];
-    for (const url of candidates) {
-      try {
-        const img = await loadImageFromUrl(url);
-
-        if (state.sampleRequestIds[slotIndex] !== requestId) return;
-        const current = state.slots[slotIndex];
-        if (current.image && !current.isSample) return;
-
-        setSlotImage(slotIndex, img, fileName, true);
-        return;
-      } catch (_e) {}
-    }
-  }
-
-  function preloadExampleImagesForMode(mode) {
-    const files = MODE_SAMPLE_FILES[mode] || MODE_SAMPLE_FILES.RGB;
-    state.slots.forEach((slot, index) => {
-      if (slot.image && !slot.isSample) return;
-      loadSampleIntoSlot(index, files[index]);
-    });
-  }
-
-  function setViewMode(mode) {
-    state.viewMode = mode === 'channel' ? 'channel' : 'original';
-    syncViewButtons();
-    renderAllSourcePreviews();
-    if (!dom.imageModalOverlay.classList.contains('hidden')) {
-      renderModalCurrentItem();
-    }
-  }
-
-  function setMode(mode) {
-    state.mode = ['RGB', 'CYM', 'CUSTOM'].includes(mode) ? mode : 'RGB';
-    if (state.mode !== 'CUSTOM') {
-      state.customPreset = null;
-    }
-    fillAssignOptions();
-    syncModeButtons();
-    renderAllSourcePreviews();
-    applyAssignSelectStyles();
-    preloadExampleImagesForMode(state.mode);
-    invalidateOutputForInputChange();
-  }
-
-  function setCustomColor(slotIndex, hexValue, options = { invalidate: true }) {
-    const normalized = normalizeHexColor(hexValue, state.customColors[slotIndex] || '#808080');
-    state.customColors[slotIndex] = normalized;
-    syncCustomColorControls();
-    if (state.viewMode === 'channel') {
-      renderSourcePreview(slotIndex);
-    }
-    if (options.invalidate) invalidateOutputForInputChange();
-  }
-
-  function applyCustomPreset(presetName) {
-    const colors = PRESETS[presetName];
-    if (!colors) return;
-    state.customPreset = presetName;
-    colors.forEach((color, idx) => setCustomColor(idx, color, { invalidate: false }));
-    syncCustomPresetButtons();
-    invalidateOutputForInputChange();
-  }
-
-  function setCustomControlOpen(slotIndex, isOpen) {
-    if (!dom.colorPickerDialog) return;
-    if (!isOpen) {
-      state.activeCustomSlot = null;
-      if (dom.colorPickerDialog.open) dom.colorPickerDialog.close();
-      dom.customSwatches.forEach((btn) => btn?.setAttribute('aria-expanded', 'false'));
-      return;
-    }
-    state.activeCustomSlot = slotIndex;
-    syncCustomColorControls();
-    dom.customSwatches.forEach((btn, i) => btn?.setAttribute('aria-expanded', i === slotIndex ? 'true' : 'false'));
-    if (!dom.colorPickerDialog.open) dom.colorPickerDialog.showModal();
-  }
-
-  function validateBeforeGenerate() {
-    if (state.slots.some((slot) => !slot.image)) {
-      setStatus('error', i18n[state.lang].statusNeedImages);
-      return false;
-    }
-    const selected = dom.assignSelects.map((select) => select.value);
-    if (new Set(selected).size !== selected.length) {
-      setStatus('error', i18n[state.lang].statusNeedUnique);
-      return false;
-    }
-    return true;
-  }
-
-  function getOutputAdjustmentInputs() {
-    return [dom.outputBrightness, dom.outputContrast, dom.outputTemperature, dom.outputTint, dom.outputSaturation, dom.outputGamma].filter(Boolean);
-  }
-
-  function setOutputEditControlsEnabled(enabled) {
-    getOutputAdjustmentInputs().forEach((input) => {
-      input.disabled = !enabled;
-    });
-    if (dom.outputResetButton) dom.outputResetButton.disabled = !enabled;
-  }
-
-  function updateOutputAdjustmentValueLabels() {
-    if (dom.outputBrightnessValue) dom.outputBrightnessValue.textContent = String(state.outputAdjustments.brightness);
-    if (dom.outputContrastValue) dom.outputContrastValue.textContent = String(state.outputAdjustments.contrast);
-    if (dom.outputTemperatureValue) dom.outputTemperatureValue.textContent = String(state.outputAdjustments.temperature);
-    if (dom.outputTintValue) dom.outputTintValue.textContent = String(state.outputAdjustments.tint);
-    if (dom.outputSaturationValue) dom.outputSaturationValue.textContent = String(state.outputAdjustments.saturation);
-    if (dom.outputGammaValue) dom.outputGammaValue.textContent = String(state.outputAdjustments.gamma);
-  }
-
-  function resetOutputAdjustments(syncInputs = true) {
-    state.outputAdjustments = {
-      brightness: 0,
-      contrast: 0,
-      temperature: 0,
-      tint: 0,
-      saturation: 0,
-      gamma: 0
-    };
-    if (syncInputs) {
-      if (dom.outputBrightness) dom.outputBrightness.value = '0';
-      if (dom.outputContrast) dom.outputContrast.value = '0';
-      if (dom.outputTemperature) dom.outputTemperature.value = '0';
-      if (dom.outputTint) dom.outputTint.value = '0';
-      if (dom.outputSaturation) dom.outputSaturation.value = '0';
-      if (dom.outputGamma) dom.outputGamma.value = '0';
-    }
-    updateOutputAdjustmentValueLabels();
-  }
-
-  function ensureOutputRenderScheduler() {
-    if (state.outputRenderScheduler) return state.outputRenderScheduler;
-    const factory = window.SharedUiCore?.createRafScheduler;
-    if (typeof factory !== 'function') return null;
-
-    state.outputRenderScheduler = factory(() => {
-      const renderMode = state.outputRenderMode === 'preview' ? 'preview' : 'full';
-      state.outputRenderMode = 'idle';
-      renderOutputFromBase({ preview: renderMode === 'preview', previewScale: state.outputPreviewScale });
-    });
-
-    return state.outputRenderScheduler;
-  }
-
-  function quantizePreviewAdjustment(key, value) {
-    const steps = {
-      brightness: 6,
-      contrast: 6,
-      temperature: 8,
-      tint: 8,
-      saturation: 6,
-      gamma: 6
-    };
-    const step = steps[key] || 2;
-    const numeric = Number(value) || 0;
-    return Math.round(numeric / step) * step;
-  }
-
-  function getPreviewAdjustments() {
-    return {
-      brightness: quantizePreviewAdjustment('brightness', state.outputAdjustments.brightness),
-      contrast: quantizePreviewAdjustment('contrast', state.outputAdjustments.contrast),
-      temperature: quantizePreviewAdjustment('temperature', state.outputAdjustments.temperature),
-      tint: quantizePreviewAdjustment('tint', state.outputAdjustments.tint),
-      saturation: quantizePreviewAdjustment('saturation', state.outputAdjustments.saturation),
-      gamma: quantizePreviewAdjustment('gamma', state.outputAdjustments.gamma)
-    };
-  }
-
-  function getPreviewAdjustmentsSignature() {
-    const q = getPreviewAdjustments();
-    return `${q.brightness}|${q.contrast}|${q.temperature}|${q.tint}|${q.saturation}|${q.gamma}`;
-  }
-
-  function resolveOutputPreviewScale(baseWidth, baseHeight, requestedScale, maxPixelsOverride) {
-    const preferredScale = Math.max(state.outputPreviewMinScale, Math.min(1, Number(requestedScale) || state.outputPreviewScale));
-    const maxPixels = Number(maxPixelsOverride || state.outputPreviewMaxPixels) || 0;
-    const maxDimension = Number(state.outputPreviewMaxDimension) || 0;
-    const dimScale = maxDimension > 0 && baseWidth && baseHeight
-      ? Math.min(1, maxDimension / Math.max(baseWidth, baseHeight))
-      : 1;
-    if (!maxPixels || !baseWidth || !baseHeight) return preferredScale;
-    const adaptiveScale = Math.sqrt(maxPixels / (baseWidth * baseHeight));
-    return Math.max(state.outputPreviewMinScale, Math.min(preferredScale, adaptiveScale, dimScale, 1));
-  }
-
-  function scheduleOutputRender(mode = 'full') {
-    if (!state.outputBaseImageData || !dom.outputCanvas) return;
-    const requestedMode = mode === 'preview' ? 'preview' : 'full';
-    const scheduler = ensureOutputRenderScheduler();
-    const hasPending = Boolean(scheduler?.isScheduled?.());
-
-    if (requestedMode === 'full') {
-      state.outputRenderMode = 'full';
-    } else if (!(hasPending && state.outputRenderMode === 'full')) {
-      state.outputRenderMode = 'preview';
-    }
-
-    if (scheduler) {
-      scheduler.schedule();
-      return;
-    }
-
-    renderOutputFromBase({ preview: requestedMode === 'preview', previewScale: state.outputPreviewScale });
-  }
-
-  function clearOutputInteractionTimer() {
-    if (!state.outputInteractionTimer) return;
-    clearTimeout(state.outputInteractionTimer);
-    state.outputInteractionTimer = 0;
-  }
-
-  function clearOutputPreviewThrottleTimer() {
-    if (!state.outputPreviewThrottleTimer) return;
-    clearTimeout(state.outputPreviewThrottleTimer);
-    state.outputPreviewThrottleTimer = 0;
-  }
-
-  function queueOutputPreviewRender() {
-    const now = performance.now();
-    state.outputCurrentPreviewMaxPixels = state.outputPreviewFastMaxPixels;
-
-    state.outputInteractionActive = true;
-    clearOutputInteractionTimer();
-    const previewSig = getPreviewAdjustmentsSignature();
-    if (previewSig !== state.outputLastQueuedPreviewSignature) {
-      state.outputLastQueuedPreviewSignature = previewSig;
-      const elapsed = now - state.outputLastPreviewAt;
-      if (elapsed >= state.outputPreviewMinIntervalMs) {
-        clearOutputPreviewThrottleTimer();
-        scheduleOutputRender('preview');
-      } else if (!state.outputPreviewThrottleTimer) {
-        const waitMs = Math.max(0, state.outputPreviewMinIntervalMs - elapsed);
-        state.outputPreviewThrottleTimer = window.setTimeout(() => {
-          state.outputPreviewThrottleTimer = 0;
-          scheduleOutputRender('preview');
-        }, waitMs);
-      }
-    }
-
-    state.outputInteractionTimer = window.setTimeout(() => {
-      finishOutputSliderInteraction();
-    }, 140);
-  }
-
-  function finishOutputSliderInteraction(force = false) {
-    clearOutputInteractionTimer();
-    clearOutputPreviewThrottleTimer();
-    const hadInteraction = state.outputInteractionActive;
-    state.outputInteractionActive = false;
-    state.outputCurrentPreviewMaxPixels = state.outputPreviewMaxPixels;
-    state.outputLastQueuedPreviewSignature = '';
-    if (hadInteraction || force) {
-      scheduleOutputRender('full');
-    }
-  }
-
-  function renderOutputFromBase(options = {}) {
-    if (!state.outputBaseImageData || !dom.outputCanvas) return;
-    const base = state.outputBaseImageData;
-    const source = base.data;
-    const baseWidth = base.width;
-    const baseHeight = base.height;
-    const previewRequested = options.preview === true;
-    const renderAdjustments = previewRequested ? getPreviewAdjustments() : state.outputAdjustments;
-    const previewScale = resolveOutputPreviewScale(baseWidth, baseHeight, options.previewScale, state.outputCurrentPreviewMaxPixels);
-    const renderWidth = previewRequested ? Math.max(1, Math.round(baseWidth * previewScale)) : baseWidth;
-    const renderHeight = previewRequested ? Math.max(1, Math.round(baseHeight * previewScale)) : baseHeight;
-    const usePreviewSampling = renderWidth !== baseWidth || renderHeight !== baseHeight;
-    const renderSignature = `${previewRequested ? 'p' : 'f'}:${renderWidth}x${renderHeight}:${renderAdjustments.brightness}|${renderAdjustments.contrast}|${renderAdjustments.temperature}|${renderAdjustments.tint}|${renderAdjustments.saturation}|${renderAdjustments.gamma}`;
-
-    if (previewRequested && renderSignature === state.outputLastPreviewSignature) {
-      return;
-    }
-    if (!previewRequested && renderSignature === state.outputLastFullSignature) {
-      return;
-    }
-
-    const ctx = dom.outputCanvas.getContext('2d');
-    const out = new ImageData(renderWidth, renderHeight);
-
-    const brightness = renderAdjustments.brightness * 2.55;
-    const contrastFactor = 1 + (renderAdjustments.contrast / 100);
-    const temperature = renderAdjustments.temperature * 1.2;
-    const tint = renderAdjustments.tint * 1.2;
-    const saturationFactor = 1 + (renderAdjustments.saturation / 100);
-    const gammaSlider = renderAdjustments.gamma;
-    const gamma = gammaSlider >= 0 ? 1 / (1 + gammaSlider / 100) : 1 - gammaSlider / 100;
-
-    const xScale = baseWidth / renderWidth;
-    const yScale = baseHeight / renderHeight;
-
-    for (let y = 0; y < renderHeight; y += 1) {
-      const srcY = usePreviewSampling ? Math.min(baseHeight - 1, Math.floor((y + 0.5) * yScale)) : y;
-      for (let x = 0; x < renderWidth; x += 1) {
-        const srcX = usePreviewSampling ? Math.min(baseWidth - 1, Math.floor((x + 0.5) * xScale)) : x;
-        const srcIndex = (srcY * baseWidth + srcX) * 4;
-        const outIndex = (y * renderWidth + x) * 4;
-
-        let r = source[srcIndex];
-        let g = source[srcIndex + 1];
-        let b = source[srcIndex + 2];
-
-        r = (r - 127.5) * contrastFactor + 127.5 + brightness;
-        g = (g - 127.5) * contrastFactor + 127.5 + brightness;
-        b = (b - 127.5) * contrastFactor + 127.5 + brightness;
-
-        r += temperature;
-        b -= temperature;
-        g += tint;
-        r -= tint * 0.5;
-        b -= tint * 0.5;
-
-        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-        r = gray + (r - gray) * saturationFactor;
-        g = gray + (g - gray) * saturationFactor;
-        b = gray + (b - gray) * saturationFactor;
-
-        r = 255 * Math.pow(Math.max(0, Math.min(1, r / 255)), gamma);
-        g = 255 * Math.pow(Math.max(0, Math.min(1, g / 255)), gamma);
-        b = 255 * Math.pow(Math.max(0, Math.min(1, b / 255)), gamma);
-
-        out.data[outIndex] = clampByte(r);
-        out.data[outIndex + 1] = clampByte(g);
-        out.data[outIndex + 2] = clampByte(b);
-        out.data[outIndex + 3] = 255;
-      }
-    }
-
-    dom.outputCanvas.width = baseWidth;
-    dom.outputCanvas.height = baseHeight;
-
-    if (!usePreviewSampling) {
-      ctx.putImageData(out, 0, 0);
+  function applyTheme() {
+    var langCopy = window.ImageToolsLandingI18n ? window.ImageToolsLandingI18n.getCopy(state.lang) : null;
+    if (window.SharedUiCore) {
+      window.SharedUiCore.applyBodyTheme(state.theme);
     } else {
-      if (!state.outputPreviewCanvas) state.outputPreviewCanvas = document.createElement('canvas');
-      const previewCanvas = state.outputPreviewCanvas;
-      previewCanvas.width = renderWidth;
-      previewCanvas.height = renderHeight;
-      const previewCtx = previewCanvas.getContext('2d');
-      previewCtx.putImageData(out, 0, 0);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.clearRect(0, 0, baseWidth, baseHeight);
-      ctx.drawImage(previewCanvas, 0, 0, baseWidth, baseHeight);
+      document.body.classList.toggle('dark', state.theme === 'dark');
     }
+    var button = document.getElementById('btn-theme');
+    if (!button) return;
+    button.setAttribute('aria-pressed', String(state.theme === 'dark'));
+    var toggleThemeLabel = langCopy ? langCopy.toggleTheme : 'Toggle theme';
+    button.setAttribute('title', toggleThemeLabel);
+    button.setAttribute('aria-label', toggleThemeLabel);
+    renderCards();
+  }
 
-    if (!dom.imageModalOverlay.classList.contains('hidden') && state.modalItemKey === 'out') {
-      renderModalCurrentItem();
+  function toggleTheme() {
+    state.theme = window.SharedUiCore ? window.SharedUiCore.toggleThemeValue(state.theme) : (state.theme === 'dark' ? 'light' : 'dark');
+    localStorage.setItem('theme', state.theme);
+    var button = document.getElementById('btn-theme');
+    if (window.SharedUiCore && button) window.SharedUiCore.animateThemeButton(button, 420);
+    applyTheme();
+  }
+
+  function withLang(href) {
+    var separator = href.indexOf('?') >= 0 ? '&' : '?';
+    return href + separator + 'lang=' + encodeURIComponent(state.lang);
+  }
+
+  function renderCardsInGrid(gridId, toolList) {
+    var grid = document.getElementById(gridId);
+    if (!grid) return;
+
+    var cards = toolList.map(function (tool) {
+      var i18nCopy = window.ImageToolsLandingI18n ? window.ImageToolsLandingI18n.getCopy(state.lang) : null;
+      var content = i18nCopy ? i18nCopy.cards[tool.key] : { title: tool.key, desc: '' };
+      var coverImage = state.theme === 'dark' ? tool.imageDark : (tool.imageLight || tool.imageDark);
+      var statusBadge = '';
+      if (tool.status === 'wip') {
+        statusBadge = '<span class="tool-status-badge">WIP</span>';
+      }
+
+      return [
+        '<a class="tool-card" href="' + withLang(tool.href) + '">',
+        '<img class="tool-cover" src="' + coverImage + '" alt="' + content.title + ' preview" onerror="this.onerror=null;this.src=\'/image-tools/assets/og-image.svg\';">',
+        '<div class="tool-content">',
+        '<h3 class="tool-title">' + content.title + statusBadge + '</h3>',
+        '<p class="tool-desc">' + content.desc + '</p>',
+        '</div>',
+        '</a>'
+      ].join('');
+    }).join('');
+
+    grid.innerHTML = cards;
+  }
+
+  function getTools() {
+    return state.tools && state.tools.length ? state.tools : tools;
+  }
+
+  function renderCards() {
+    var currentTools = getTools();
+    renderCardsInGrid('tools-grid', currentTools.filter(function (tool) { return tool.section === 'image-tools'; }));
+  }
+
+  async function loadLandingCatalogs() {
+    if (!window.SharedToolLandingCore || typeof window.SharedToolLandingCore.loadSectionCatalogs !== 'function') {
+      return;
     }
+    var loaded = await window.SharedToolLandingCore.loadSectionCatalogs(LANDING_SECTIONS);
+    if (loaded && loaded.length) {
+      state.tools = loaded;
+    }
+  }
 
-    if (previewRequested) {
-      state.outputLastPreviewSignature = renderSignature;
-      state.outputLastPreviewAt = performance.now();
+  function readSectionFromUrl() {
+    var url = new URL(window.location.href);
+    var section = (url.searchParams.get('section') || '').trim();
+    if (section) return section;
+    var hash = (window.location.hash || '').replace(/^#/, '').trim();
+    return hash || '';
+  }
+
+  function focusSectionFromUrl() {
+    var sectionId = readSectionFromUrl();
+    if (!sectionId) return;
+    var target = document.getElementById(sectionId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(function () {
+      window.scrollBy({ top: -18, left: 0, behavior: 'auto' });
+    }, 260);
+    target.classList.add('section-focused');
+    window.setTimeout(function () {
+      target.classList.remove('section-focused');
+    }, 1600);
+  }
+
+  function renderRelatedWork() {
+    var root = document.getElementById('related-work-root');
+    if (!root) return;
+    if (!window.SharedRelatedWork?.init) {
+      root.classList.add('hidden');
+      return;
+    }
+    window.SharedRelatedWork.init({
+      container: root,
+      toolId: 'Landing',
+      lang: state.lang,
+      sourceUrl: '/image-tools/assets/related-work.json',
+      publicationsSourceUrl: window.PUBLICATIONS_SOURCE_URL || 'https://enheragu.github.io/publications-data.json'
+    });
+    var hasContent = root.children.length > 0 || root.textContent.trim().length > 0;
+    root.classList.toggle('hidden', !hasContent);
+  }
+
+  function setElText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function applyLanguage() {
+    var langCopy = window.ImageToolsLandingI18n ? window.ImageToolsLandingI18n.getCopy(state.lang) : null;
+    if (!langCopy) return;
+    document.documentElement.lang = state.lang;
+    document.title = langCopy.pageTitle;
+    setElText('site-title', langCopy.siteTitle);
+    setElText('site-subtitle', langCopy.subtitle);
+    setElText('intro-title', langCopy.introTitle);
+    setElText('intro-text', langCopy.introText);
+    setElText('image-tools-title', langCopy.imageToolsTitle);
+    const footerReportProblem = document.getElementById('footer-report-problem');
+    if (footerReportProblem) footerReportProblem.textContent = langCopy.reportProblem;
+    if (window.SharedFooter?.setLang) window.SharedFooter.setLang(state.lang);
+
+    if (window.SharedUiCore?.setLangSwitcherState) {
+      window.SharedUiCore.setLangSwitcherState(state.lang, '#lang-switcher');
     } else {
-      state.outputLastFullSignature = renderSignature;
-    }
-  }
-
-  function contributionFromAssign(assign, slotIndex) {
-    if (state.mode === 'CUSTOM') {
-      const [r, g, b] = hexToRgb(state.customColors[slotIndex]);
-      return [r / 255, g / 255, b / 255];
+      document.getElementById('btn-en').classList.toggle('active', state.lang === 'en');
+      document.getElementById('btn-es').classList.toggle('active', state.lang === 'es');
+      document.getElementById('lang-switcher').classList.toggle('lang-es', state.lang === 'es');
     }
 
-    if (state.mode === 'RGB') {
-      if (assign === 'R') return [1, 0, 0];
-      if (assign === 'G') return [0, 1, 0];
-      return [0, 0, 1];
-    }
-
-    if (assign === 'C') return [0, 1, 1];
-    if (assign === 'Y') return [1, 1, 0];
-    return [1, 0, 1];
-  }
-
-  function generateFusion() {
-    if (!validateBeforeGenerate()) return;
-
-    const width = Math.max(...state.slots.map((slot) => slot.image.width));
-    const height = Math.max(...state.slots.map((slot) => slot.image.height));
-
-    const accum = new Float32Array(width * height * 3);
-    const tmp = document.createElement('canvas');
-    tmp.width = width;
-    tmp.height = height;
-    const tctx = tmp.getContext('2d', { willReadFrequently: true });
-
-    state.slots.forEach((slot, index) => {
-      tctx.clearRect(0, 0, width, height);
-      tctx.drawImage(slot.image, 0, 0, width, height);
-      const src = tctx.getImageData(0, 0, width, height).data;
-
-      const assign = dom.assignSelects[index]?.value;
-      const [cr, cg, cb] = contributionFromAssign(assign, index);
-
-      for (let i = 0, p = 0; i < src.length; i += 4, p += 3) {
-        const lum = 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2];
-        accum[p] += lum * cr;
-        accum[p + 1] += lum * cg;
-        accum[p + 2] += lum * cb;
-      }
-    });
-
-    const outData = new Uint8ClampedArray(width * height * 4);
-    for (let p = 0, i = 0; p < accum.length; p += 3, i += 4) {
-      outData[i] = clampByte(accum[p]);
-      outData[i + 1] = clampByte(accum[p + 1]);
-      outData[i + 2] = clampByte(accum[p + 2]);
-      outData[i + 3] = 255;
-    }
-
-    state.outputBaseImageData = new ImageData(outData, width, height);
-    state.outputLastPreviewSignature = '';
-    state.outputLastQueuedPreviewSignature = '';
-    state.outputLastFullSignature = '';
-    state.outputLastPreviewAt = 0;
-    state.outputReady = true;
-    setOutputEditControlsEnabled(true);
-    dom.downloadButton.disabled = false;
-    resetOutputAdjustments(true);
-    renderOutputFromBase();
-    setStatus('ok', i18n[state.lang].statusDone(width, height, state.mode));
-  }
-
-  function handleDownload() {
-    if (!state.outputReady) return;
-    const link = document.createElement('a');
-    link.href = dom.outputCanvas.toDataURL('image/png');
-    link.download = `harris-shutter-${state.mode.toLowerCase()}.png`;
-    link.click();
-  }
-
-  function getModalItems() {
-    const items = [];
-    for (let i = 0; i < 3; i += 1) {
-      if (state.slots[i].image) items.push(`src${i}`);
-    }
-    if (state.outputReady) items.push('out');
-    return items;
-  }
-
-  function getModalCanvasForKey(key) {
-    if (key === 'out') return dom.outputCanvas;
-    if (key === 'src0') return dom.previewCanvases[0];
-    if (key === 'src1') return dom.previewCanvases[1];
-    if (key === 'src2') return dom.previewCanvases[2];
-    return null;
-  }
-
-  function getModalTitleForKey(key) {
-    const t = i18nApi.getCopy(state.lang);
-    if (key === 'out') return t.output;
-    const idx = Number(key.replace('src', ''));
-    return `${t.source} ${idx + 1}`;
-  }
-
-  function renderModalCurrentItem() {
-    if (!state.modalItemKey) return;
-    const modalCanvas = dom.imageModalCanvas;
-    if (state.modalItemKey === 'out') {
-      const sourceCanvas = dom.outputCanvas;
-      if (!sourceCanvas) return;
-      modalCanvas.width = sourceCanvas.width;
-      modalCanvas.height = sourceCanvas.height;
-      const ctx = modalCanvas.getContext('2d');
-      ctx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
-      ctx.drawImage(sourceCanvas, 0, 0);
+    if (window.SharedUiCore) {
+      window.SharedUiCore.syncLangInUrl(state.lang);
     } else {
-      const idx = Number(state.modalItemKey.replace('src', ''));
-      const slot = state.slots[idx];
-      if (!slot?.image) return;
-      if (state.viewMode === 'channel') {
-          drawTintedChannelView(slot.image, modalCanvas, getSlotTint(idx), { fullSize: true });
-      } else {
-        drawImageToCanvas(slot.image, modalCanvas);
-      }
+      var url = new URL(window.location.href);
+      url.searchParams.set('lang', state.lang);
+      window.history.replaceState({}, '', url.toString());
     }
 
-    if (dom.imageModalTitle) dom.imageModalTitle.textContent = getModalTitleForKey(state.modalItemKey);
+    document.documentElement.classList.remove('i18n-pending');
+    renderCards();
+    applyTheme();
+    renderRelatedWork();
   }
 
-  function openImageModalByTarget(targetId) {
-    if (!targetId) return;
-    let key = null;
-    if (targetId === 'preview-0' || targetId === '0') key = 'src0';
-    if (targetId === 'preview-1' || targetId === '1') key = 'src1';
-    if (targetId === 'preview-2' || targetId === '2') key = 'src2';
-    if (targetId === 'output-canvas') key = 'out';
-    if (!key) return;
-
-    const items = getModalItems();
-    if (!items.includes(key)) return;
-
-    state.modalItemKey = key;
-    dom.imageModalOverlay.classList.remove('hidden');
-    dom.imageModalOverlay.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('modal-open');
-    renderModalCurrentItem();
+  function setLang(lang) {
+    state.lang = lang;
+    if (window.ImageToolsLandingI18n?.setLang) window.ImageToolsLandingI18n.setLang(lang);
+    applyLanguage();
   }
 
-  function closeImageModal() {
-    dom.imageModalOverlay.classList.add('hidden');
-    dom.imageModalOverlay.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('modal-open');
-  }
+  async function init() {
+    state.lang = readLangFromUrl();
 
-  function navigateImageModal(direction) {
-    const items = getModalItems();
-    if (!items.length || !state.modalItemKey) return;
-    const idx = items.indexOf(state.modalItemKey);
-    if (idx === -1) return;
-    const next = (idx + direction + items.length) % items.length;
-    state.modalItemKey = items[next];
-    renderModalCurrentItem();
-  }
-
-  function initImageModal() {
-    dom.closeImageModalButton?.addEventListener('click', closeImageModal);
-    dom.imagePrevButton?.addEventListener('click', () => navigateImageModal(-1));
-    dom.imageNextButton?.addEventListener('click', () => navigateImageModal(1));
-
-    dom.imageModalOverlay?.addEventListener('click', (event) => {
-      if (event.target === dom.imageModalOverlay) {
-        closeImageModal();
-      }
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (dom.imageModalOverlay.classList.contains('hidden')) return;
-      if (event.key === 'Escape') closeImageModal();
-      if (event.key === 'ArrowLeft') navigateImageModal(-1);
-      if (event.key === 'ArrowRight') navigateImageModal(1);
-    });
-  }
-
-  function updateWorkflowSymbolsPosition() {
-    const symbols = dom.workflowSymbols;
-    const grid = dom.sourceGrid;
-    if (!symbols || !grid) return;
-
-    const cards = Array.from(grid.querySelectorAll('.source-card[data-slot]'));
-    if (cards.length < 3) return;
-
-    const gRect = grid.getBoundingClientRect();
-    const c1 = cards[0].getBoundingClientRect();
-    const c2 = cards[1].getBoundingClientRect();
-    const c3 = cards[2].getBoundingClientRect();
-    const p1 = dom.previewCanvases[0]?.getBoundingClientRect();
-    const p2 = dom.previewCanvases[1]?.getBoundingClientRect();
-    const p3 = dom.previewCanvases[2]?.getBoundingClientRect();
-
-    const plus1 = symbols.querySelector('.workflow-plus-1');
-    const plus2 = symbols.querySelector('.workflow-plus-2');
-    const eq = symbols.querySelector('.workflow-eq');
-
-    if (!plus1 || !plus2 || !eq) return;
-
-    const yRef = p1 || c1;
-    const centerY = yRef.top + yRef.height / 2 - gRect.top;
-    plus1.style.left = `${((c1.right + c2.left) / 2) - gRect.left}px`;
-    plus2.style.left = `${((c2.right + c3.left) / 2) - gRect.left}px`;
-
-    const outputCard = grid.querySelector('.output-card');
-    if (outputCard) {
-      const outRect = dom.outputCanvas?.getBoundingClientRect() || outputCard.getBoundingClientRect();
-      const rightRef = p3 || c3;
-      eq.style.left = `${((rightRef.right + outRect.left) / 2) - gRect.left}px`;
-    }
-
-    plus1.style.top = `${centerY}px`;
-    plus2.style.top = `${centerY}px`;
-    eq.style.top = `${centerY}px`;
-  }
-
-  function initRelatedWork() {
-    if (typeof window.mountRelatedWork === 'function') {
-      window.mountRelatedWork({
-        rootId: 'related-work-root',
-        toolKey: 'harris-shutter-tool',
-        viewAllHref: 'https://enheragu.github.io/related-work/'
-      });
-    }
-  }
-
-  function initEvents() {
-    dom.modeButtons.forEach((btn) => {
-      btn?.addEventListener('click', () => {
-        setMode(btn.dataset.colorMode);
-      });
-    });
-
-    dom.customPresetButtons.forEach((btn) => {
-      btn?.addEventListener('click', () => {
-        applyCustomPreset(btn.dataset.customPreset);
-      });
-    });
-
-    dom.assignSelects.forEach((select) => {
-      select?.addEventListener('change', () => {
-        applyAssignSelectStyles();
-        renderAllSourcePreviews();
-        invalidateOutputForInputChange();
-      });
-    });
-
-    dom.customSwatches.forEach((swatch, index) => {
-      swatch?.addEventListener('click', () => {
-        setCustomControlOpen(index, true);
-      });
-    });
-
-    dom.btnColorPickerClose?.addEventListener('click', () => {
-      setCustomControlOpen(-1, false);
-    });
-
-    dom.colorPickerDialog?.addEventListener('cancel', (event) => {
-      event.preventDefault();
-      setCustomControlOpen(-1, false);
-    });
-
-    dom.colorPickerDialog?.addEventListener('click', (event) => {
-      if (event.target === dom.colorPickerDialog) {
-        setCustomControlOpen(-1, false);
-      }
-    });
-
-    const updateSVFromPointer = (event) => {
-      if (!dom.modalSv) return;
-      const rect = dom.modalSv.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
-      const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-      state.pickerHsv.s = (x / rect.width) * 100;
-      state.pickerHsv.v = 100 - (y / rect.height) * 100;
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    };
-
-    dom.modalSv?.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      updateSVFromPointer(event);
-      const onMove = (moveEvent) => updateSVFromPointer(moveEvent);
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-      };
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-    });
-
-    dom.modalSv?.addEventListener('keydown', (event) => {
-      const step = event.shiftKey ? 5 : 1;
-      let changed = false;
-      if (event.key === 'ArrowLeft') {
-        state.pickerHsv.s = Math.max(0, state.pickerHsv.s - step);
-        changed = true;
-      }
-      if (event.key === 'ArrowRight') {
-        state.pickerHsv.s = Math.min(100, state.pickerHsv.s + step);
-        changed = true;
-      }
-      if (event.key === 'ArrowUp') {
-        state.pickerHsv.v = Math.min(100, state.pickerHsv.v + step);
-        changed = true;
-      }
-      if (event.key === 'ArrowDown') {
-        state.pickerHsv.v = Math.max(0, state.pickerHsv.v - step);
-        changed = true;
-      }
-      if (!changed) return;
-      event.preventDefault();
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    });
-
-    dom.modalHue?.addEventListener('input', () => {
-      state.pickerHsv.h = Number(dom.modalHue.value) || 0;
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    });
-
-    [dom.modalR, dom.modalG, dom.modalB].forEach((input) => {
-      input?.addEventListener('input', () => {
-        input.value = String(input.value).replace(/[^0-9]/g, '').slice(0, 3);
-      });
-      input?.addEventListener('change', () => {
-        if (state.activeCustomSlot === null) return;
-        state.customPreset = null;
-        syncCustomPresetButtons();
-        const hex = rgbToHex(dom.modalR?.value, dom.modalG?.value, dom.modalB?.value);
-        setCustomColor(state.activeCustomSlot, hex);
-      });
-    });
-
-    dom.modalHex?.addEventListener('input', () => {
-      const cleaned = String(dom.modalHex.value || '').trim().replace(/[^#0-9a-fA-F]/g, '').slice(0, 7);
-      dom.modalHex.value = cleaned;
-    });
-
-    dom.modalHex?.addEventListener('change', () => {
-      if (state.activeCustomSlot === null) return;
-      state.customPreset = null;
-      syncCustomPresetButtons();
-      setCustomColor(state.activeCustomSlot, dom.modalHex.value || state.customColors[state.activeCustomSlot]);
-    });
-
-    dom.modalPaletteChips.forEach((chip) => {
-      chip.addEventListener('click', () => {
-        if (state.activeCustomSlot === null) return;
-        const hex = chip.dataset.paletteColor;
-        if (!hex) return;
-        state.customPreset = null;
-        syncCustomPresetButtons();
-        setCustomColor(state.activeCustomSlot, hex);
-      });
-    });
-
-    dom.expandButtons.forEach((btn) => {
-      btn?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        openImageModalByTarget(btn.dataset.expandSlot);
-      });
-    });
-
-    dom.allViewButtons.forEach((btn) => {
-      btn?.addEventListener('click', () => {
-        setViewMode(btn.dataset.viewMode);
-      });
-    });
-
-    const outputRangeItems = [
-      ['brightness', dom.outputBrightness],
-      ['contrast', dom.outputContrast],
-      ['temperature', dom.outputTemperature],
-      ['tint', dom.outputTint],
-      ['saturation', dom.outputSaturation],
-      ['gamma', dom.outputGamma]
-    ];
-
-    const rangeItems = outputRangeItems.map(([key, input]) => ({ key, input, defaultValue: 0 }));
-    const onRangeInput = (key, value) => {
-      state.outputAdjustments[key] = value;
-      updateOutputAdjustmentValueLabels();
-      queueOutputPreviewRender();
-    };
-    const onRangeCommit = (key, value) => {
-      state.outputAdjustments[key] = value;
-      updateOutputAdjustmentValueLabels();
-      finishOutputSliderInteraction();
-    };
-
-    if (typeof window.SharedUiCore?.bindRangeControlGroup === 'function') {
-      window.SharedUiCore.bindRangeControlGroup({
-        items: rangeItems,
-        enableDoubleClickReset: true,
-        onInput: onRangeInput,
-        onCommit: onRangeCommit
+    if (window.SharedUiCore?.bindHeaderControls) {
+      window.SharedUiCore.bindHeaderControls({
+        themeButtonId: 'btn-theme',
+        langSwitcherSelector: '#lang-switcher',
+        onToggleTheme: toggleTheme,
+        onToggleLang: function () {
+          setLang(state.lang === 'en' ? 'es' : 'en');
+        }
       });
     } else {
-      rangeItems.forEach(({ key, input, defaultValue }) => {
-        if (!input) return;
-        input.addEventListener('input', () => {
-          onRangeInput(key, Number(input.value) || 0);
-        });
-        input.addEventListener('change', () => {
-          onRangeCommit(key, Number(input.value) || 0);
-        });
-        input.addEventListener('pointerup', () => {
-          onRangeCommit(key, Number(input.value) || 0);
-        });
-        input.addEventListener('dblclick', (event) => {
-          event.preventDefault();
-          if (input.disabled) return;
-          if ((Number(input.value) || 0) === defaultValue) return;
-          input.value = String(defaultValue);
-          onRangeInput(key, defaultValue);
-          onRangeCommit(key, defaultValue);
-        });
+      document.getElementById('btn-theme').addEventListener('click', toggleTheme);
+      document.querySelector('#lang-switcher').addEventListener('click', function () {
+        setLang(state.lang === 'en' ? 'es' : 'en');
       });
     }
 
-    dom.outputResetButton?.addEventListener('click', () => {
-      resetOutputAdjustments(true);
-      finishOutputSliderInteraction(true);
-    });
-
-    dom.generateButton?.addEventListener('click', generateFusion);
-    dom.downloadButton?.addEventListener('click', handleDownload);
-
-    window.addEventListener('resize', updateWorkflowSymbolsPosition);
+    applyLanguage();
+    await loadLandingCatalogs();
+    renderCards();
+    focusSectionFromUrl();
   }
 
-  function initImageCards() {
-    [0, 1, 2].forEach((idx) => {
-      imageCards[idx] = window.SharedImageCard.create({
-        canvas:    dom.previewCanvases[idx],
-        fileInput: dom.fileInputs[idx],
-        clearBtn:  dom.clearButtons[idx],
-        dragTarget:    dom.sourceCards[idx],
-        dragOverClass: 'is-drag-over',
-        onLoad: (bitmap, fileName) => {
-          setSlotImage(idx, bitmap, fileName, false);
-        },
-        onClear: () => {
-          clearSlot(idx);
-        },
-      });
-    });
-  }
-
-  function init() {
-    initShell();
-    fillAssignOptions();
-    syncModeButtons();
-    syncViewButtons();
-    resetOutputAdjustments(true);
-    updateOutputAdjustmentValueLabels();
-    setOutputEditControlsEnabled(false);
-    initImageCards();
-    initEvents();
-    initImageModal();
-    initRelatedWork();
-    ensureOutputRenderScheduler();
-
-    const ctx = dom.outputCanvas.getContext('2d');
-    ctx.fillStyle = '#0b1220';
-    ctx.fillRect(0, 0, dom.outputCanvas.width, dom.outputCanvas.height);
-
-    updateDropHints();
-    updateVisibleFileNames();
-    preloadExampleImagesForMode(state.mode);
-    requestAnimationFrame(updateWorkflowSymbolsPosition);
-  }
-
-  init();
+  document.addEventListener('DOMContentLoaded', init);
 })();

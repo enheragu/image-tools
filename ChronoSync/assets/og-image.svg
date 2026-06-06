@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0d1117"/>
+  <rect x="1" y="1" width="1198" height="628" rx="8" fill="#161b22"/>
+  <!-- Left photo frame -->
+  <rect x="80" y="80" width="460" height="470" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+  <text x="310" y="330" font-family="system-ui,sans-serif" font-size="80" fill="#30363d" text-anchor="middle">📷</text>
+  <text x="310" y="510" font-family="system-ui,sans-serif" font-size="22" fill="#58A6FF" text-anchor="middle" font-weight="600">2020</text>
+  <!-- Right photo frame -->
+  <rect x="660" y="80" width="460" height="470" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
+  <text x="890" y="330" font-family="system-ui,sans-serif" font-size="80" fill="#30363d" text-anchor="middle">📷</text>
+  <text x="890" y="510" font-family="system-ui,sans-serif" font-size="22" fill="#3FB950" text-anchor="middle" font-weight="600">2024</text>
+  <!-- Arrow between frames -->
+  <line x1="555" y1="315" x2="645" y2="315" stroke="#58A6FF" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="643,308 656,315 643,322" fill="#58A6FF"/>
+  <!-- Title -->
+  <text x="600" y="590" font-family="system-ui,sans-serif" font-size="28" fill="#8b949e" text-anchor="middle">ChronoSync — Temporal photo alignment</text>
+</svg>
