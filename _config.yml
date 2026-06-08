@@ -21,6 +21,7 @@ defaults:
       analytics_measurement_id: G-NB38N7JG5S
       footer_related_contextual: true
       with_tabs: true
+      with_tools_nav: true
   - scope:
       path: "HarrisShutter"
     values:
@@ -33,5 +34,3 @@ defaults:
     values:
       header_supertitle: Image Tools
       tool_name: ChronoSync
-      with_image_card: true
-      with_lightbox_stage: true

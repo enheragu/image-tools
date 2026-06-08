@@ -1,6 +1,7 @@
 ---
 layout: tool_document
 redirect_path: /image-tools
+header_supertitle: Image Tools
 meta_title: ChronoSync — Temporal photo alignment
 meta_description: Align photos of the same location taken at different times using feature detection and compose them into a collage.
 og_title: ChronoSync — Temporal photo alignment
@@ -14,6 +15,11 @@ intro_title: What is ChronoSync?
 intro_text: Upload photos of the same scene taken at different times. ChronoSync detects characteristic points in each photo, aligns them to a common frame, and composes them into a collage. Vertical photos are placed side by side; horizontal ones are stacked. Add optional date labels to each photo — read from EXIF metadata, editable if needed. All processing runs in your browser, nothing is uploaded.
 footer_credits_html: |
   <p id="footer-author">Author: <a href="https://enheragu.github.io/" target="_blank" rel="noopener noreferrer">Enrique Heredia-Aguado</a></p>
+with_heic_loader: true
+with_color_picker: true
+with_drop_zone: true
+with_progress_bar: true
+with_lightbox_stage: true
 custom_css:
   - css/style.css
 custom_js:
@@ -37,89 +43,158 @@ custom_js:
           %}
         </div>
 
-        <div class="panel-block upload-actions-row">
-          <div class="upload-file-cluster">
-            <label for="file-add" class="btn-secondary file-picker-btn" id="lbl-add-photos">Add photos</label>
-            <input id="file-add" class="file-input-native sr-only" type="file" accept="image/*" multiple>
+        <div class="panel-block upload-top-row">
+          <div class="drop-zone-side">
+            {% capture chronosync_drop_buttons %}<div class="drop-zone-btns"><label for="file-add" class="btn-secondary btn-sm" id="lbl-add-photos">Browse files</label><input id="file-add" class="file-input-native sr-only" type="file" accept="image/*" multiple></div>{% endcapture %}
+            {% include widgets/widget_drop_zone.html
+              zone_id="photo-drop-zone"
+              aria_label="Add photos"
+              icon_html='<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" role="presentation" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
+              hint_text="Drag &amp; drop photos here or"
+              hint_id="drop-zone-hint"
+              slot_buttons=chronosync_drop_buttons
+            %}
           </div>
-          <div class="upload-ref-cluster">
-            <label id="lbl-reference" for="select-reference">Reference image</label>
-            <select id="select-reference" class="ref-select" aria-label="Reference image"></select>
-          </div>
-          <div class="action-inline">
-            <button id="btn-align" class="btn-primary" type="button" disabled>Align photos</button>
-            <button id="btn-clear" class="btn-secondary" type="button" disabled>Clear all</button>
+
+          <!-- Label format settings -->
+          <div class="card label-config-side" id="label-global-controls">
+            <div class="label-config-header">
+              <span class="label-global-label" id="lbl-label-settings">Label settings</span>
+            </div>
+            <div class="label-global-fields">
+              <span class="label-global-field-label" id="lbl-label-font">Font</span>
+              <div class="label-global-row">
+                <select id="label-global-font" class="label-global-select">
+                  <option value="system-ui, sans-serif">Sans-serif</option>
+                  <option value="Georgia, serif">Serif</option>
+                  <option value="Impact, Haettenschweiler, sans-serif">Impact</option>
+                  <option value="'Courier New', Courier, monospace">Monospace</option>
+                </select>
+                <div class="label-format-btns">
+                  <button id="label-global-bold" class="label-fmt-btn" type="button" aria-label="Bold" aria-pressed="false" title="Bold"><b>B</b></button>
+                  <button id="label-global-italic" class="label-fmt-btn" type="button" aria-label="Italic" aria-pressed="false" title="Italic"><i>I</i></button>
+                </div>
+              </div>
+              <span class="label-global-field-label" id="lbl-label-size">Size</span>
+              <div class="stepper label-size-stepper">
+                <button class="btn-stepper" data-step-target="label-global-size" data-step="-1" type="button">−</button>
+                <input id="label-global-size" type="number" min="5" max="80" step="1" value="27">
+                <button class="btn-stepper" data-step-target="label-global-size" data-step="1" type="button">+</button>
+              </div>
+              <span class="label-global-field-label" id="lbl-label-color">Color</span>
+              <button id="label-global-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label color" style="--swatch:#FFD700"></button>
+              <span class="label-global-field-label" id="lbl-label-bg-opacity">Bg opacity</span>
+              <div class="label-size-wrap">
+                <button id="label-global-bg-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label background color" style="--swatch:#000000"></button>
+                <input type="range" id="label-global-bg-opacity" class="label-global-range" min="0" max="100" step="5" value="0">
+                <span id="val-label-global-bg-opacity" class="label-size-val">0%</span>
+              </div>
+              <span class="label-global-field-label" id="lbl-label-position">Position</span>
+              <select id="label-global-pos" class="label-global-select">
+                <option value="bottom-left">Bottom left</option>
+                <option value="bottom-right">Bottom right</option>
+                <option value="top-left">Top left</option>
+                <option value="top-right">Top right</option>
+              </select>
+              <span class="label-global-field-label" id="lbl-label-margin">Margin</span>
+              <div class="label-size-wrap">
+                <input type="range" id="label-global-margin" class="label-global-range" min="0" max="5" step="0.25" value="1">
+                <span id="val-label-global-margin" class="label-size-val">1%</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="photo-cards-grid" class="photo-cards-grid"></div>
 
+        <div class="panel-block upload-actions-row" id="upload-actions-row">
+          <div class="upload-ref-cluster">
+            <label id="lbl-reference" for="select-reference">Reference image</label>
+            <select id="select-reference" class="ref-select" aria-label="Reference image"></select>
+          </div>
+          <div class="shared-btn-group shared-btn-group--2">
+            <button id="btn-align" class="btn-primary" type="button" disabled>Align photos</button>
+            <button id="btn-clear" class="btn-secondary" type="button" disabled>Clear all</button>
+          </div>
+        </div>
+
         <div class="panel-block status-row">
           <p class="hint" id="status-upload">Add at least two photos to begin.</p>
-          <div id="progress-bar-wrap" class="progress-bar-wrap hidden" aria-hidden="true">
-            <div id="progress-bar" class="progress-bar" style="width:0%"></div>
-          </div>
+          {% include widgets/widget_progress_bar.html wrap_id="progress-bar-wrap" bar_id="progress-bar" hidden=true %}
         </div>
       </section>
 
-      <!-- Preview panel: aligned images with keypoints -->
+      <!-- Collage preview + output edits (auto-composed after alignment) -->
       <section class="panel panel-preview hidden" id="panel-preview">
         <div class="panel-header">
           {% include widgets/widget_section_heading.html
             tag='h2'
             title_id='preview-title'
             title_class='shared-panel-title'
-            title='Alignment preview'
+            title='Collage preview'
             emphasis='subtle'
           %}
         </div>
+
         <div class="panel-block preview-controls-row">
           <label class="toggle-label" for="toggle-keypoints">
             <input id="toggle-keypoints" type="checkbox" checked>
             <span id="lbl-show-keypoints">Show keypoints</span>
           </label>
-          <div class="action-inline shared-btn-group shared-btn-group--2">
-            <button id="btn-compose" class="btn-primary" type="button">Compose collage</button>
+          <label class="toggle-label" for="toggle-grid">
+            <input id="toggle-grid" type="checkbox">
+            <span id="lbl-show-grid">Show grid</span>
+          </label>
+          <div class="shared-btn-group">
             <button id="btn-download" class="btn-secondary" type="button" disabled>Download collage</button>
           </div>
         </div>
-        <div id="aligned-grid" class="aligned-grid"></div>
-      </section>
 
-      <!-- Output edits panel -->
-      <section class="panel panel-output-edits hidden" id="panel-output-edits">
-        <div class="output-edit-panel">
-          <div class="panel-header subpanel-header output-edit-header">
-            {% include widgets/widget_section_heading.html
-              tag='h2'
-              title_id='output-edit-title'
-              title_class='shared-panel-title'
-              title='Output edits'
-              emphasis='subtle'
-            %}
-            <button id="btn-output-reset" class="btn-secondary btn-reset-edits" type="button" disabled>Reset edits</button>
+        <div class="preview-layout">
+          <div class="collage-wrap" id="collage-wrap">
+            <canvas id="collage-canvas"></canvas>
+            <div class="preview-actions">
+              <button id="btn-expand-collage" class="btn-chart-expand btn-preview-icon shared-icon-btn shared-icon-btn-sm shared-icon-btn-accent" type="button" aria-label="Expand collage" title="Expand"></button>
+            </div>
           </div>
-          <p class="hint output-edit-hint" id="output-edit-hint">Basic non-destructive adjustments before download.</p>
-          <div class="output-edit-grid range-skin-vivid">
-            <label class="shared-range-control" for="output-brightness">
-              <span class="shared-range-label-row"><span id="lbl-output-brightness">Brightness</span><strong id="val-output-brightness" class="shared-range-value">0</strong></span>
-              <input id="output-brightness" type="range" min="-100" max="100" step="1" value="0" disabled>
-            </label>
-            <label class="shared-range-control" for="output-contrast">
-              <span class="shared-range-label-row"><span id="lbl-output-contrast">Contrast</span><strong id="val-output-contrast" class="shared-range-value">0</strong></span>
-              <input id="output-contrast" type="range" min="-100" max="100" step="1" value="0" disabled>
-            </label>
-            <label class="shared-range-control" for="output-saturation">
-              <span class="shared-range-label-row"><span id="lbl-output-saturation">Saturation</span><strong id="val-output-saturation" class="shared-range-value">0</strong></span>
-              <input id="output-saturation" type="range" min="-100" max="100" step="1" value="0" disabled>
-            </label>
-          </div>
-        </div>
 
-        <div class="collage-wrap" id="collage-wrap">
-          <canvas id="collage-canvas"></canvas>
-          <div class="preview-actions">
-            <button class="btn-chart-expand btn-preview-icon shared-icon-btn shared-icon-btn-sm shared-icon-btn-accent btn-preview-expand" type="button" data-expand-target="collage-canvas" data-title-key="collage" aria-label="Expand collage" title="Expand"></button>
+          <div class="output-edit-panel">
+            <div class="panel-header subpanel-header output-edit-header">
+              {% include widgets/widget_section_heading.html
+                tag='h2'
+                title_id='output-edit-title'
+                title_class='shared-panel-title'
+                title='Output edits'
+                emphasis='subtle'
+              %}
+              <button id="btn-output-reset" class="btn-secondary btn-reset-edits" type="button" disabled>Reset edits</button>
+            </div>
+            <div class="output-edit-grid range-skin-vivid">
+              <label class="shared-range-control" for="output-brightness">
+                <span class="shared-range-label-row"><span id="lbl-output-brightness">Brightness</span><strong id="val-output-brightness" class="shared-range-value">0</strong></span>
+                <input id="output-brightness" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+              <label class="shared-range-control" for="output-contrast">
+                <span class="shared-range-label-row"><span id="lbl-output-contrast">Contrast</span><strong id="val-output-contrast" class="shared-range-value">0</strong></span>
+                <input id="output-contrast" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+              <label class="shared-range-control" for="output-temperature">
+                <span class="shared-range-label-row"><span id="lbl-output-temperature">Temperature</span><strong id="val-output-temperature" class="shared-range-value">0</strong></span>
+                <input id="output-temperature" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+              <label class="shared-range-control" for="output-tint">
+                <span class="shared-range-label-row"><span id="lbl-output-tint">Tint</span><strong id="val-output-tint" class="shared-range-value">0</strong></span>
+                <input id="output-tint" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+              <label class="shared-range-control" for="output-saturation">
+                <span class="shared-range-label-row"><span id="lbl-output-saturation">Saturation</span><strong id="val-output-saturation" class="shared-range-value">0</strong></span>
+                <input id="output-saturation" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+              <label class="shared-range-control" for="output-gamma">
+                <span class="shared-range-label-row"><span id="lbl-output-gamma">Gamma</span><strong id="val-output-gamma" class="shared-range-value">0</strong></span>
+                <input id="output-gamma" type="range" min="-100" max="100" step="1" value="0" disabled>
+              </label>
+            </div>
           </div>
         </div>
       </section>
@@ -127,43 +202,104 @@ custom_js:
     </main>
   </div>
 
-  <!-- Color picker dialog (reused from HarrisShutter pattern) -->
-  <dialog id="color-picker-dialog" class="panel custom-color-modal">
-    <div class="panel-header subpanel-header">
-      <h2 id="color-picker-title" class="shared-panel-title">Choose a color</h2>
-      <button id="btn-close-color" class="btn-preview-icon btn-modal-close shared-icon-btn shared-close-btn" type="button" aria-label="Close" title="Close">
-        <span aria-hidden="true" class="icon-close">
-          <svg viewBox="0 0 24 24" role="presentation" focusable="false">
-            <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </span>
+  <!-- Collage expand lightbox -->
+  <section id="collage-modal-overlay" class="chart-modal-overlay hidden" aria-hidden="true">
+    <div class="shared-lightbox-stage" role="dialog" aria-modal="true" aria-labelledby="collage-modal-title">
+      <h3 id="collage-modal-title" class="sr-only">Collage preview</h3>
+      <button id="btn-close-collage-modal" class="collage-modal-close shared-icon-btn shared-close-btn" type="button" aria-label="Close" title="Close">
+        <svg viewBox="0 0 24 24" role="presentation" focusable="false" width="20" height="20">
+          <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </button>
+      <img id="collage-modal-img" class="shared-lightbox-media shared-lightbox-frame" alt="">
     </div>
-    <div class="color-picker-body">
-      <div class="color-picker-map-wrap">
-        <span id="lbl-color-map" class="custom-color-map-label">Color map</span>
-        <div id="modal-sv" class="custom-color-map" role="slider" aria-labelledby="lbl-color-map" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" tabindex="0">
-          <span id="modal-sv-thumb" class="custom-color-map-thumb" aria-hidden="true"></span>
+  </section>
+
+  <!-- Photo edit gallery modal -->
+  <section id="photo-edit-modal-overlay" class="chart-modal-overlay hidden" aria-hidden="true">
+    <div class="photo-edit-modal" role="dialog" aria-modal="true" aria-labelledby="photo-edit-modal-title">
+      <div class="photo-edit-stage">
+
+        <div class="photo-edit-image-col">
+          <button id="btn-photo-modal-prev" class="btn-preview-icon btn-modal-nav shared-icon-btn shared-nav-btn" type="button" aria-label="Previous photo" title="Previous">
+            <svg viewBox="0 0 24 24" role="presentation" focusable="false" width="20" height="20">
+              <path d="M14.5 6 8.5 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <canvas id="photo-edit-canvas" class="photo-edit-canvas"></canvas>
+          <button id="btn-photo-modal-next" class="btn-preview-icon btn-modal-nav shared-icon-btn shared-nav-btn" type="button" aria-label="Next photo" title="Next">
+            <svg viewBox="0 0 24 24" role="presentation" focusable="false" width="20" height="20">
+              <path d="M9.5 6 15.5 12l-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
-      </div>
-      <label class="custom-hue-wrap" for="modal-hue">
-        <span id="lbl-modal-hue" class="custom-hue-label">Hue</span>
-        <input id="modal-hue" class="custom-hue-range" type="range" min="0" max="360" step="1" value="0" aria-label="Hue">
-      </label>
-      <div class="custom-rgb-row">
-        <label class="custom-rgb-field"><span class="custom-rgb-label">R</span><input id="modal-r" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Red"></label>
-        <label class="custom-rgb-field"><span class="custom-rgb-label">G</span><input id="modal-g" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Green"></label>
-        <label class="custom-rgb-field"><span class="custom-rgb-label">B</span><input id="modal-b" class="custom-rgb-input" type="number" min="0" max="255" value="255" aria-label="Blue"></label>
-      </div>
-      <input id="modal-hex" class="custom-color-hex" type="text" value="#FFFFFF" inputmode="text" maxlength="7" spellcheck="false" aria-label="HEX">
-      <div id="lbl-modal-palette" class="custom-palette-label">Palette</div>
-      <div class="custom-palette-row" role="group" aria-labelledby="lbl-modal-palette">
-        <button class="palette-chip" type="button" data-palette-color="#FFFFFF" style="--chip:#FFFFFF"></button>
-        <button class="palette-chip" type="button" data-palette-color="#000000" style="--chip:#000000"></button>
-        <button class="palette-chip" type="button" data-palette-color="#58A6FF" style="--chip:#58A6FF"></button>
-        <button class="palette-chip" type="button" data-palette-color="#3FB950" style="--chip:#3FB950"></button>
-        <button class="palette-chip" type="button" data-palette-color="#D29922" style="--chip:#D29922"></button>
-        <button class="palette-chip" type="button" data-palette-color="#F85149" style="--chip:#F85149"></button>
+
+        <div class="photo-edit-sidebar">
+          <div class="photo-edit-sidebar-header">
+            <span id="photo-edit-modal-title" class="photo-edit-sidebar-name"></span>
+            <button id="btn-close-photo-edit" class="btn-preview-icon shared-icon-btn shared-close-btn" type="button" aria-label="Close" title="Close">
+              <svg viewBox="0 0 24 24" role="presentation" focusable="false" width="18" height="18">
+                <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="photo-edit-sidebar-body">
+
+            <div class="photo-edit-section-title">Adjustments</div>
+            <div class="photo-edit-sliders range-skin-vivid">
+              <label class="shared-range-control" for="photo-edit-brightness">
+                <span class="shared-range-label-row"><span>Brightness</span><strong id="val-photo-edit-brightness" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-brightness" type="range" min="-100" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-contrast">
+                <span class="shared-range-label-row"><span>Contrast</span><strong id="val-photo-edit-contrast" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-contrast" type="range" min="-100" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-temperature">
+                <span class="shared-range-label-row"><span>Temperature</span><strong id="val-photo-edit-temperature" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-temperature" type="range" min="-100" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-tint">
+                <span class="shared-range-label-row"><span>Tint</span><strong id="val-photo-edit-tint" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-tint" type="range" min="-100" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-saturation">
+                <span class="shared-range-label-row"><span>Saturation</span><strong id="val-photo-edit-saturation" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-saturation" type="range" min="-100" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-sharpness">
+                <span class="shared-range-label-row"><span>Sharpness</span><strong id="val-photo-edit-sharpness" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-sharpness" type="range" min="0" max="100" step="1" value="0">
+              </label>
+              <label class="shared-range-control" for="photo-edit-vignette">
+                <span class="shared-range-label-row"><span>Vignette</span><strong id="val-photo-edit-vignette" class="shared-range-value">0</strong></span>
+                <input id="photo-edit-vignette" type="range" min="0" max="100" step="1" value="0">
+              </label>
+            </div>
+
+            <div class="photo-edit-section-title">Label</div>
+            <div class="photo-edit-label-controls">
+              <label class="label-toggle">
+                <input type="checkbox" id="photo-edit-label-enabled">
+                <span>Show label</span>
+              </label>
+              <input type="text" id="photo-edit-label-text" class="label-text-input" placeholder="Date" aria-label="Label text">
+              <div class="photo-edit-label-row">
+                <button id="photo-edit-label-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label color" style="--swatch:#FFD700"></button>
+                <select id="photo-edit-label-pos" class="label-pos-select" aria-label="Label position">
+                  <option value="bottom-left">Bottom left</option>
+                  <option value="bottom-right">Bottom right</option>
+                  <option value="top-left">Top left</option>
+                  <option value="top-right">Top right</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
-  </dialog>
+  </section>
+
+  {% include widgets/widget_color_picker.html %}

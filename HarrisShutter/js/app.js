@@ -148,7 +148,6 @@
     customColors: ['#FF4D4D', '#A66B2F', '#40B56A'],
     customPreset: null,
     activeCustomSlot: null,
-    pickerHsv: { h: 0, s: 0, v: 100 },
     modalItemKey: null,
     outputRenderMode: 'idle',
     outputPreviewScale: 0.42,
@@ -266,20 +265,12 @@
     outputGamma: document.getElementById('output-gamma'),
     footerSource: document.getElementById('footer-source'),
     footerAuthor: document.getElementById('footer-author'),
-    colorPickerDialog: document.getElementById('color-picker-dialog'),
-    btnColorPickerClose: document.getElementById('btn-close-color'),
-    colorPickerTitle: document.getElementById('color-picker-title'),
-    colorMapLabel: document.getElementById('lbl-color-map'),
-    colorHueLabel: document.getElementById('lbl-modal-hue'),
-    colorPaletteLabel: document.getElementById('lbl-modal-palette'),
-    modalSv: document.getElementById('modal-sv'),
-    modalSvThumb: document.getElementById('modal-sv-thumb'),
-    modalHue: document.getElementById('modal-hue'),
-    modalHex: document.getElementById('modal-hex'),
-    modalR: document.getElementById('modal-r'),
-    modalG: document.getElementById('modal-g'),
-    modalB: document.getElementById('modal-b'),
-    modalPaletteChips: Array.from(document.querySelectorAll('#color-picker-dialog .palette-chip'))
+    colorPickerDialog: document.getElementById('shared-color-picker-dialog'),
+    btnColorPickerClose: document.getElementById('shared-cp-close'),
+    colorPickerTitle: document.getElementById('shared-cp-title'),
+    colorMapLabel: document.getElementById('shared-cp-lbl-map'),
+    colorHueLabel: document.getElementById('shared-cp-lbl-hue'),
+    colorPaletteLabel: document.getElementById('shared-cp-lbl-palette')
   };
 
   // SharedImageCard instances (one per source slot), initialised in init()
@@ -304,78 +295,6 @@
   function rgbToHex(r, g, b) {
     const clamp = (v) => Math.max(0, Math.min(255, Math.round(Number(v) || 0)));
     return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`.toUpperCase();
-  }
-
-  function rgbToHsv(r, g, b) {
-    const rn = (r || 0) / 255;
-    const gn = (g || 0) / 255;
-    const bn = (b || 0) / 255;
-    const max = Math.max(rn, gn, bn);
-    const min = Math.min(rn, gn, bn);
-    const delta = max - min;
-
-    let h = 0;
-    if (delta !== 0) {
-      if (max === rn) h = ((gn - bn) / delta) % 6;
-      else if (max === gn) h = (bn - rn) / delta + 2;
-      else h = (rn - gn) / delta + 4;
-      h = Math.round(h * 60);
-      if (h < 0) h += 360;
-    }
-
-    const s = max === 0 ? 0 : (delta / max) * 100;
-    const v = max * 100;
-    return { h, s, v };
-  }
-
-  function hsvToRgb(h, s, v) {
-    const hh = ((Number(h) % 360) + 360) % 360;
-    const ss = Math.max(0, Math.min(100, Number(s))) / 100;
-    const vv = Math.max(0, Math.min(100, Number(v))) / 100;
-    const c = vv * ss;
-    const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
-    const m = vv - c;
-    let r1 = 0;
-    let g1 = 0;
-    let b1 = 0;
-
-    if (hh < 60) [r1, g1, b1] = [c, x, 0];
-    else if (hh < 120) [r1, g1, b1] = [x, c, 0];
-    else if (hh < 180) [r1, g1, b1] = [0, c, x];
-    else if (hh < 240) [r1, g1, b1] = [0, x, c];
-    else if (hh < 300) [r1, g1, b1] = [x, 0, c];
-    else [r1, g1, b1] = [c, 0, x];
-
-    return [
-      Math.round((r1 + m) * 255),
-      Math.round((g1 + m) * 255),
-      Math.round((b1 + m) * 255)
-    ];
-  }
-
-  function syncModalColorMapUI() {
-    if (!dom.modalSv || !dom.modalSvThumb) return;
-    const h = Math.max(0, Math.min(360, Number(state.pickerHsv.h) || 0));
-    const s = Math.max(0, Math.min(100, Number(state.pickerHsv.s) || 0));
-    const v = Math.max(0, Math.min(100, Number(state.pickerHsv.v) || 0));
-
-    dom.modalSv.style.setProperty('--picker-hue', `${h}deg`);
-    dom.modalSvThumb.style.left = `${s}%`;
-    dom.modalSvThumb.style.top = `${100 - v}%`;
-    dom.modalSv.setAttribute('aria-valuenow', String(Math.round(s)));
-    dom.modalSv.setAttribute('aria-valuetext', `S ${Math.round(s)} V ${Math.round(v)}`);
-    if (dom.modalHue && document.activeElement !== dom.modalHue) {
-      dom.modalHue.value = String(Math.round(h));
-    }
-  }
-
-  function applyColorFromPicker(invalidate = true) {
-    if (state.activeCustomSlot === null) return;
-    const [r, g, b] = hsvToRgb(state.pickerHsv.h, state.pickerHsv.s, state.pickerHsv.v);
-    const hex = rgbToHex(r, g, b);
-    state.customPreset = null;
-    syncCustomPresetButtons();
-    setCustomColor(state.activeCustomSlot, hex, { invalidate });
   }
 
   function clampByte(value) {
@@ -436,17 +355,6 @@
         dom.customSwatches[index].style.setProperty('--swatch', normalized);
       }
     });
-
-    if (state.activeCustomSlot !== null && state.activeCustomSlot >= 0) {
-      const color = state.customColors[state.activeCustomSlot];
-      const [r, g, b] = hexToRgb(color);
-      state.pickerHsv = rgbToHsv(r, g, b);
-      syncModalColorMapUI();
-      if (dom.modalHex && document.activeElement !== dom.modalHex) dom.modalHex.value = color;
-      if (dom.modalR && document.activeElement !== dom.modalR) dom.modalR.value = String(r);
-      if (dom.modalG && document.activeElement !== dom.modalG) dom.modalG.value = String(g);
-      if (dom.modalB && document.activeElement !== dom.modalB) dom.modalB.value = String(b);
-    }
   }
 
   function syncModeButtons() {
@@ -828,17 +736,21 @@
   }
 
   function setCustomControlOpen(slotIndex, isOpen) {
-    if (!dom.colorPickerDialog) return;
+    if (!window.SharedColorPicker) return;
     if (!isOpen) {
-      state.activeCustomSlot = null;
-      if (dom.colorPickerDialog.open) dom.colorPickerDialog.close();
-      dom.customSwatches.forEach((btn) => btn?.setAttribute('aria-expanded', 'false'));
+      SharedColorPicker.close();
       return;
     }
     state.activeCustomSlot = slotIndex;
     syncCustomColorControls();
     dom.customSwatches.forEach((btn, i) => btn?.setAttribute('aria-expanded', i === slotIndex ? 'true' : 'false'));
-    if (!dom.colorPickerDialog.open) dom.colorPickerDialog.showModal();
+    const color = state.customColors[slotIndex];
+    SharedColorPicker.open(color, (hex) => {
+      if (state.activeCustomSlot === null) return;
+      state.customPreset = null;
+      syncCustomPresetButtons();
+      setCustomColor(state.activeCustomSlot, hex, { invalidate: true });
+    });
   }
 
   function validateBeforeGenerate() {
@@ -1376,110 +1288,9 @@
       });
     });
 
-    dom.btnColorPickerClose?.addEventListener('click', () => {
-      setCustomControlOpen(-1, false);
-    });
-
-    dom.colorPickerDialog?.addEventListener('cancel', (event) => {
-      event.preventDefault();
-      setCustomControlOpen(-1, false);
-    });
-
-    dom.colorPickerDialog?.addEventListener('click', (event) => {
-      if (event.target === dom.colorPickerDialog) {
-        setCustomControlOpen(-1, false);
-      }
-    });
-
-    const updateSVFromPointer = (event) => {
-      if (!dom.modalSv) return;
-      const rect = dom.modalSv.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
-      const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-      state.pickerHsv.s = (x / rect.width) * 100;
-      state.pickerHsv.v = 100 - (y / rect.height) * 100;
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    };
-
-    dom.modalSv?.addEventListener('pointerdown', (event) => {
-      event.preventDefault();
-      updateSVFromPointer(event);
-      const onMove = (moveEvent) => updateSVFromPointer(moveEvent);
-      const onUp = () => {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-      };
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-    });
-
-    dom.modalSv?.addEventListener('keydown', (event) => {
-      const step = event.shiftKey ? 5 : 1;
-      let changed = false;
-      if (event.key === 'ArrowLeft') {
-        state.pickerHsv.s = Math.max(0, state.pickerHsv.s - step);
-        changed = true;
-      }
-      if (event.key === 'ArrowRight') {
-        state.pickerHsv.s = Math.min(100, state.pickerHsv.s + step);
-        changed = true;
-      }
-      if (event.key === 'ArrowUp') {
-        state.pickerHsv.v = Math.min(100, state.pickerHsv.v + step);
-        changed = true;
-      }
-      if (event.key === 'ArrowDown') {
-        state.pickerHsv.v = Math.max(0, state.pickerHsv.v - step);
-        changed = true;
-      }
-      if (!changed) return;
-      event.preventDefault();
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    });
-
-    dom.modalHue?.addEventListener('input', () => {
-      state.pickerHsv.h = Number(dom.modalHue.value) || 0;
-      syncModalColorMapUI();
-      applyColorFromPicker(true);
-    });
-
-    [dom.modalR, dom.modalG, dom.modalB].forEach((input) => {
-      input?.addEventListener('input', () => {
-        input.value = String(input.value).replace(/[^0-9]/g, '').slice(0, 3);
-      });
-      input?.addEventListener('change', () => {
-        if (state.activeCustomSlot === null) return;
-        state.customPreset = null;
-        syncCustomPresetButtons();
-        const hex = rgbToHex(dom.modalR?.value, dom.modalG?.value, dom.modalB?.value);
-        setCustomColor(state.activeCustomSlot, hex);
-      });
-    });
-
-    dom.modalHex?.addEventListener('input', () => {
-      const cleaned = String(dom.modalHex.value || '').trim().replace(/[^#0-9a-fA-F]/g, '').slice(0, 7);
-      dom.modalHex.value = cleaned;
-    });
-
-    dom.modalHex?.addEventListener('change', () => {
-      if (state.activeCustomSlot === null) return;
-      state.customPreset = null;
-      syncCustomPresetButtons();
-      setCustomColor(state.activeCustomSlot, dom.modalHex.value || state.customColors[state.activeCustomSlot]);
-    });
-
-    dom.modalPaletteChips.forEach((chip) => {
-      chip.addEventListener('click', () => {
-        if (state.activeCustomSlot === null) return;
-        const hex = chip.dataset.paletteColor;
-        if (!hex) return;
-        state.customPreset = null;
-        syncCustomPresetButtons();
-        setCustomColor(state.activeCustomSlot, hex);
-      });
+    dom.colorPickerDialog?.addEventListener('close', () => {
+      state.activeCustomSlot = null;
+      dom.customSwatches.forEach((btn) => btn?.setAttribute('aria-expanded', 'false'));
     });
 
     dom.expandButtons.forEach((btn) => {
