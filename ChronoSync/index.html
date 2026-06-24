@@ -12,7 +12,7 @@ header_title: ChronoSync
 header_subtitle: Align and compare photos across time
 header_subtitle_id: subtitle
 intro_title: What is ChronoSync?
-intro_text: Upload photos of the same scene taken at different times. ChronoSync detects characteristic points in each photo, aligns them to a common frame, and composes them into a collage. Vertical photos are placed side by side; horizontal ones are stacked. Add optional date labels to each photo — read from EXIF metadata, editable if needed. All processing runs in your browser, nothing is uploaded.
+intro_text: "ChronoSync aligns photographs of the same place taken at different times and composes them into a pixel-level collage. Each image is matched against a reference using ORB — a fast feature detector that describes edges and corners rather than colour or texture, making it robust to seasonal foliage changes, snow, or lighting shifts — with an automatic fallback to the stronger SIFT detector for hard pairs. Correspondences are filtered with a mutual cross-check and a warp per image (similarity or mild affine) is estimated with RANSAC over several hypotheses, kept only when it aligns better than leaving the image untouched; the result is cropped to the shared valid overlap so every panel shows exactly the same scene. Date labels are read from EXIF metadata when available. All processing runs in the browser via WebAssembly — nothing is uploaded."
 footer_credits_html: |
   <p id="footer-author">Author: <a href="https://enheragu.github.io/" target="_blank" rel="noopener noreferrer">Enrique Heredia-Aguado</a></p>
 with_heic_loader: true
@@ -44,79 +44,83 @@ custom_js:
         </div>
 
         <div class="panel-block upload-top-row">
+          <!-- Left: drop zone (wider) -->
           <div class="drop-zone-side">
             {% capture chronosync_drop_buttons %}<div class="drop-zone-btns"><label for="file-add" class="btn-secondary btn-sm" id="lbl-add-photos">Browse files</label><input id="file-add" class="file-input-native sr-only" type="file" accept="image/*" multiple></div>{% endcapture %}
             {% include widgets/widget_drop_zone.html
               zone_id="photo-drop-zone"
               aria_label="Add photos"
               icon_html='<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" role="presentation" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
-              hint_text="Drag &amp; drop photos here or"
+              hint_text="Drag & drop photos here or"
               hint_id="drop-zone-hint"
               slot_buttons=chronosync_drop_buttons
             %}
           </div>
 
-          <!-- Label format settings -->
-          <div class="card label-config-side" id="label-global-controls">
-            <div class="label-config-header">
-              <span class="label-global-label" id="lbl-label-settings">Label settings</span>
-            </div>
-            <div class="label-global-fields">
-              <span class="label-global-field-label" id="lbl-label-font">Font</span>
-              <div class="label-global-row">
-                <select id="label-global-font" class="label-global-select">
-                  <option value="system-ui, sans-serif">Sans-serif</option>
-                  <option value="Georgia, serif">Serif</option>
-                  <option value="Impact, Haettenschweiler, sans-serif">Impact</option>
-                  <option value="'Courier New', Courier, monospace">Monospace</option>
+          <!-- Right: label settings + generate controls stacked -->
+          <div class="config-right-col">
+            <!-- Label format settings -->
+            <div class="card label-config-side" id="label-global-controls">
+              <div class="label-config-header">
+                <span class="label-global-label" id="lbl-label-settings">Label settings</span>
+              </div>
+              <div class="label-global-fields">
+                <!-- Row 1: Font + Size -->
+                <span class="label-global-field-label" id="lbl-label-font">Font</span>
+                <div class="label-global-row">
+                  <select id="label-global-font" class="label-global-select">
+                    <option value="system-ui, sans-serif">Sans-serif</option>
+                    <option value="Georgia, serif">Serif</option>
+                    <option value="Impact, Haettenschweiler, sans-serif">Impact</option>
+                    <option value="'Courier New', Courier, monospace">Monospace</option>
+                  </select>
+                  <div class="label-format-btns">
+                    <button id="label-global-bold" class="label-fmt-btn" type="button" aria-label="Bold" aria-pressed="false" title="Bold"><b>B</b></button>
+                    <button id="label-global-italic" class="label-fmt-btn" type="button" aria-label="Italic" aria-pressed="false" title="Italic"><i>I</i></button>
+                  </div>
+                </div>
+                <span class="label-global-field-label" id="lbl-label-size">Size</span>
+                <div class="stepper label-size-stepper">
+                  <button class="btn-stepper" data-step-target="label-global-size" data-step="-1" type="button">−</button>
+                  <input id="label-global-size" type="number" min="5" max="80" step="1" value="27">
+                  <button class="btn-stepper" data-step-target="label-global-size" data-step="1" type="button">+</button>
+                </div>
+                <!-- Row 2: Color + Bg -->
+                <span class="label-global-field-label" id="lbl-label-color">Text color</span>
+                <button id="label-global-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label text color" style="--swatch:#FFD700"></button>
+                <span class="label-global-field-label" id="lbl-label-bg-opacity">Bg color</span>
+                <button id="label-global-bg-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label background color" style="--swatch:#000000"></button>
+                <!-- Row 3: Position + Margin -->
+                <span class="label-global-field-label" id="lbl-label-position">Position</span>
+                <select id="label-global-pos" class="label-global-select">
+                  <option value="bottom-left">Bottom left</option>
+                  <option value="bottom-right">Bottom right</option>
+                  <option value="top-left">Top left</option>
+                  <option value="top-right">Top right</option>
                 </select>
-                <div class="label-format-btns">
-                  <button id="label-global-bold" class="label-fmt-btn" type="button" aria-label="Bold" aria-pressed="false" title="Bold"><b>B</b></button>
-                  <button id="label-global-italic" class="label-fmt-btn" type="button" aria-label="Italic" aria-pressed="false" title="Italic"><i>I</i></button>
+                <span class="label-global-field-label" id="lbl-label-margin">Margin</span>
+                <div class="label-size-wrap">
+                  <input type="range" id="label-global-margin" class="label-global-range" min="0" max="5" step="0.25" value="1">
+                  <span id="val-label-global-margin" class="label-size-val">1%</span>
                 </div>
               </div>
-              <span class="label-global-field-label" id="lbl-label-size">Size</span>
-              <div class="stepper label-size-stepper">
-                <button class="btn-stepper" data-step-target="label-global-size" data-step="-1" type="button">−</button>
-                <input id="label-global-size" type="number" min="5" max="80" step="1" value="27">
-                <button class="btn-stepper" data-step-target="label-global-size" data-step="1" type="button">+</button>
+            </div>
+
+            <!-- Generate controls -->
+            <div class="card generate-controls-card" id="upload-actions-row">
+              <div class="upload-ref-cluster">
+                <label id="lbl-reference" for="select-reference">Reference</label>
+                <select id="select-reference" class="ref-select" aria-label="Reference image"></select>
               </div>
-              <span class="label-global-field-label" id="lbl-label-color">Color</span>
-              <button id="label-global-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label color" style="--swatch:#FFD700"></button>
-              <span class="label-global-field-label" id="lbl-label-bg-opacity">Bg opacity</span>
-              <div class="label-size-wrap">
-                <button id="label-global-bg-color" class="label-color-swatch btn-ghost btn-sm" type="button" aria-label="Label background color" style="--swatch:#000000"></button>
-                <input type="range" id="label-global-bg-opacity" class="label-global-range" min="0" max="100" step="5" value="0">
-                <span id="val-label-global-bg-opacity" class="label-size-val">0%</span>
-              </div>
-              <span class="label-global-field-label" id="lbl-label-position">Position</span>
-              <select id="label-global-pos" class="label-global-select">
-                <option value="bottom-left">Bottom left</option>
-                <option value="bottom-right">Bottom right</option>
-                <option value="top-left">Top left</option>
-                <option value="top-right">Top right</option>
-              </select>
-              <span class="label-global-field-label" id="lbl-label-margin">Margin</span>
-              <div class="label-size-wrap">
-                <input type="range" id="label-global-margin" class="label-global-range" min="0" max="5" step="0.25" value="1">
-                <span id="val-label-global-margin" class="label-size-val">1%</span>
+              <div class="shared-btn-group shared-btn-group--2">
+                <button id="btn-align" class="btn-primary" type="button" disabled>Align photos</button>
+                <button id="btn-clear" class="btn-secondary" type="button" disabled>Clear all</button>
               </div>
             </div>
           </div>
         </div>
 
         <div id="photo-cards-grid" class="photo-cards-grid"></div>
-
-        <div class="panel-block upload-actions-row" id="upload-actions-row">
-          <div class="upload-ref-cluster">
-            <label id="lbl-reference" for="select-reference">Reference image</label>
-            <select id="select-reference" class="ref-select" aria-label="Reference image"></select>
-          </div>
-          <div class="shared-btn-group shared-btn-group--2">
-            <button id="btn-align" class="btn-primary" type="button" disabled>Align photos</button>
-            <button id="btn-clear" class="btn-secondary" type="button" disabled>Clear all</button>
-          </div>
-        </div>
 
         <div class="panel-block status-row">
           <p class="hint" id="status-upload">Add at least two photos to begin.</p>
@@ -136,6 +140,60 @@ custom_js:
           %}
         </div>
 
+        <div class="panel-block mosaic-controls">
+          <label class="mosaic-field">
+            <span id="lbl-mosaic-mode">Layout</span>
+            <select id="mosaic-mode" class="mosaic-select">
+              <option value="cascade">Cascade</option>
+              <option value="grid">Grid</option>
+              <option value="composite">Composite</option>
+            </select>
+          </label>
+          <label class="mosaic-field mosaic-sub" data-show="cascade">
+            <span id="lbl-mosaic-orient">Orientation</span>
+            <select id="mosaic-orientation" class="mosaic-select">
+              <option value="auto">Auto</option>
+              <option value="sidebyside">Side by side</option>
+              <option value="stacked">Stacked</option>
+            </select>
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="grid">
+            <span id="lbl-mosaic-cols">Columns</span>
+            <input id="mosaic-cols" class="mosaic-num" type="number" min="1" max="6" value="2">
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="composite">
+            <span id="lbl-mosaic-pattern">Pattern</span>
+            <select id="mosaic-pattern" class="mosaic-select">
+              <option value="stripes">Stripes</option>
+              <option value="blocks">Blocks</option>
+              <option value="radial">Radial</option>
+            </select>
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="stripes">
+            <span id="lbl-mosaic-bands">Bands/img</span>
+            <input id="mosaic-bands" class="mosaic-num" type="number" min="1" max="8" value="1">
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="stripes">
+            <span id="lbl-mosaic-angle">Angle</span>
+            <input id="mosaic-angle" class="mosaic-range" type="range" min="0" max="180" step="5" value="0">
+            <span id="val-mosaic-angle" class="mosaic-val">0°</span>
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="blocks">
+            <span id="lbl-mosaic-blocks">Blocks</span>
+            <input id="mosaic-blocks-x" class="mosaic-num" type="number" min="1" max="12" value="4">
+            <span class="mosaic-x">×</span>
+            <input id="mosaic-blocks-y" class="mosaic-num" type="number" min="1" max="12" value="4">
+          </label>
+          <label class="mosaic-field mosaic-sub hidden" data-show="radial">
+            <span id="lbl-mosaic-sectors">Sectors</span>
+            <input id="mosaic-sectors" class="mosaic-num" type="number" min="2" max="16" value="4">
+          </label>
+          <label class="mosaic-field mosaic-sub toggle-label hidden" data-show="composite" for="toggle-fill-gaps">
+            <input id="toggle-fill-gaps" type="checkbox">
+            <span id="lbl-fill-gaps">Fill gaps</span>
+          </label>
+        </div>
+
         <div class="panel-block preview-controls-row">
           <label class="toggle-label" for="toggle-keypoints">
             <input id="toggle-keypoints" type="checkbox" checked>
@@ -144,6 +202,10 @@ custom_js:
           <label class="toggle-label" for="toggle-grid">
             <input id="toggle-grid" type="checkbox">
             <span id="lbl-show-grid">Show grid</span>
+          </label>
+          <label class="toggle-label" for="toggle-trim-black">
+            <input id="toggle-trim-black" type="checkbox" checked>
+            <span id="lbl-trim-black">Trim black</span>
           </label>
           <div class="shared-btn-group">
             <button id="btn-download" class="btn-secondary" type="button" disabled>Download collage</button>

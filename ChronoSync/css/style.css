@@ -11,42 +11,76 @@ main {
   padding: .6rem 1rem;
 }
 
-/* ── Upload top row: drop zone + label config card side by side ──────────────── */
+/* ── Upload top row: drop zone (left, wider) + config column (right) ─────────── */
 
 .upload-top-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 2fr minmax(240px, 1fr);
   gap: 1rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .drop-zone-side {
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.drop-zone-side .shared-drop-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+.config-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
 }
 
 .label-config-side {
-  flex: 1;
-  min-width: 260px;
-  padding: .55rem .8rem .65rem;
+  padding: .55rem .7rem .6rem;
 }
 
 .label-config-header {
-  padding-bottom: .35rem;
-  margin-bottom: .4rem;
+  padding-bottom: .3rem;
+  margin-bottom: .35rem;
   border-bottom: 1px solid var(--clr-border);
+}
+
+.generate-controls-card {
+  padding: .55rem .7rem .6rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .45rem .65rem;
+}
+
+.generate-controls-card .upload-ref-cluster {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Drop zone (compact state — base styles in shared drop-zone.css) ─────────── */
 
 .shared-drop-zone.has-photos {
   padding: .65rem 1rem;
-  width: auto;
-  align-self: flex-start;
+  justify-content: center;
 }
 
-.shared-drop-zone.has-photos .drop-zone-icon,
+.shared-drop-zone.has-photos .drop-zone-icon {
+  opacity: .45;
+}
+
+.shared-drop-zone.has-photos .drop-zone-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
 .shared-drop-zone.has-photos .drop-zone-hint {
-  display: none;
+  font-size: var(--txt-sm);
 }
 
 .upload-actions-row {
@@ -100,6 +134,10 @@ main {
   display: flex;
   flex-direction: column;
 }
+
+.photo-card.dragging { opacity: 0.45; }
+.photo-card.drag-over { outline: 2px dashed var(--clr-accent, #58A6FF); outline-offset: -2px; }
+.photo-card[draggable="true"] .photo-card-header { cursor: grab; }
 
 .photo-card-header {
   display: flex;
@@ -156,15 +194,15 @@ main {
   accent-color: var(--clr-primary);
 }
 
-.label-controls {
+.card-label-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: .35rem;
+  gap: .45rem;
 }
 
-.label-controls.hidden {
-  display: none;
+.card-label-row .label-text-input {
+  flex: 1;
+  min-width: 0;
 }
 
 .label-text-input {
@@ -213,17 +251,15 @@ main {
 
 .label-global-fields {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto 1fr;
   align-items: center;
-  gap: .3rem .55rem;
-  width: 100%;
-  min-width: 260px;
+  gap: .3rem .45rem;
 }
 
 .label-global-row {
   display: flex;
   align-items: center;
-  gap: .35rem;
+  gap: .3rem;
   min-width: 0;
 }
 
@@ -238,7 +274,7 @@ main {
 
 .label-global-fields .label-global-range {
   flex: 1;
-  min-width: 60px;
+  min-width: 40px;
 }
 
 .label-global-field-label {
@@ -325,6 +361,58 @@ main {
   cursor: pointer;
   accent-color: var(--clr-primary);
 }
+
+/* ── Mosaic / layout controls ──────────────────────────────────────────────── */
+
+.mosaic-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem 1rem;
+}
+
+.mosaic-field {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: var(--txt-md);
+  user-select: none;
+}
+
+.mosaic-field.hidden { display: none; }
+
+.mosaic-select {
+  padding: .25rem .4rem;
+  border: 1px solid var(--clr-border);
+  border-radius: 5px;
+  background: var(--clr-surface);
+  color: var(--txt-base, var(--clr-text));
+  font-size: var(--txt-md);
+  cursor: pointer;
+}
+
+.mosaic-num {
+  width: 3.4em;
+  padding: .25rem .35rem;
+  border: 1px solid var(--clr-border);
+  border-radius: 5px;
+  background: var(--clr-surface);
+  color: var(--txt-base, var(--clr-text));
+  font-size: var(--txt-md);
+}
+
+.mosaic-range {
+  width: 90px;
+  accent-color: var(--clr-primary);
+}
+
+.mosaic-val {
+  min-width: 2.6em;
+  font-variant-numeric: tabular-nums;
+  color: var(--clr-text-muted, var(--clr-text));
+}
+
+.mosaic-x { opacity: .6; }
 
 /* ── Collage canvas + output edits side-by-side ────────────────────────────── */
 
@@ -549,6 +637,22 @@ main {
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 52em) {
+  .upload-top-row {
+    grid-template-columns: 1fr;
+  }
+
+  .label-global-fields {
+    grid-template-columns: auto 1fr auto 1fr;
+  }
+}
+
+@media (max-width: 32em) {
+  .label-global-fields {
+    grid-template-columns: auto 1fr;
+  }
+}
 
 @media (max-width: 50em) {
   .photo-edit-stage {

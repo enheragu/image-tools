@@ -1,17 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#0d1117"/>
-  <rect x="1" y="1" width="1198" height="628" rx="8" fill="#161b22"/>
-  <!-- Left photo frame -->
-  <rect x="80" y="80" width="460" height="470" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
-  <text x="310" y="330" font-family="system-ui,sans-serif" font-size="80" fill="#30363d" text-anchor="middle">📷</text>
-  <text x="310" y="510" font-family="system-ui,sans-serif" font-size="22" fill="#58A6FF" text-anchor="middle" font-weight="600">2020</text>
-  <!-- Right photo frame -->
-  <rect x="660" y="80" width="460" height="470" rx="10" fill="#21262d" stroke="#30363d" stroke-width="1.5"/>
-  <text x="890" y="330" font-family="system-ui,sans-serif" font-size="80" fill="#30363d" text-anchor="middle">📷</text>
-  <text x="890" y="510" font-family="system-ui,sans-serif" font-size="22" fill="#3FB950" text-anchor="middle" font-weight="600">2024</text>
-  <!-- Arrow between frames -->
-  <line x1="555" y1="315" x2="645" y2="315" stroke="#58A6FF" stroke-width="3" stroke-linecap="round"/>
-  <polygon points="643,308 656,315 643,322" fill="#58A6FF"/>
-  <!-- Title -->
-  <text x="600" y="590" font-family="system-ui,sans-serif" font-size="28" fill="#8b949e" text-anchor="middle">ChronoSync — Temporal photo alignment</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ChronoSync - social preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0f14"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <!-- One seven-segment digit (all segments), cell 56x88, with gaps between segments -->
+    <g id="seg">
+      <line x1="13" y1="4"  x2="43" y2="4"/>
+      <line x1="5"  y1="13" x2="5"  y2="37"/>
+      <line x1="51" y1="13" x2="51" y2="37"/>
+      <line x1="13" y1="44" x2="43" y2="44"/>
+      <line x1="5"  y1="51" x2="5"  y2="75"/>
+      <line x1="51" y1="51" x2="51" y2="75"/>
+      <line x1="13" y1="84" x2="43" y2="84"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="68" y="58" width="1064" height="514" rx="22" fill="#161b22" stroke="#30363d"/>
+
+  <text x="112" y="156" fill="#58a6ff" font-size="70" font-family="Segoe UI, Arial, sans-serif" font-weight="700">ChronoSync</text>
+  <text x="112" y="210" fill="#e6edf3" font-size="45" font-family="Segoe UI, Arial, sans-serif">Temporal photo alignment</text>
+
+  <!-- ICON: one clock device cut in half — analog face (left) + digital half (right), sliced at the seam -->
+  <path d="M560,285 H736 Q760,285 760,309 V501 Q760,525 736,525 H560 A120 120 0 0 1 560,285 Z"
+        fill="#1a212b" stroke="#30363d" stroke-width="3"/>
+
+  <!-- Digital screen: upper area, flush-cut at the seam, elongated -->
+  <path d="M560,309 H722 Q738,309 738,325 V433 Q738,449 722,449 H560 Z"
+        fill="#161d27" stroke="#2c3542" stroke-width="1.5"/>
+
+  <!-- Unlit (ghost) seven-segment grid -->
+  <g stroke="#30363d" stroke-width="8" stroke-linecap="round">
+    <use href="#seg" x="588" y="330"/>
+    <use href="#seg" x="658" y="330"/>
+  </g>
+  <!-- Lit segments: 2 4 -->
+  <g stroke="#79c0ff" stroke-width="8" stroke-linecap="round">
+    <!-- 2 = a b g e d -->
+    <line x1="601" y1="334" x2="631" y2="334"/>
+    <line x1="639" y1="343" x2="639" y2="367"/>
+    <line x1="601" y1="374" x2="631" y2="374"/>
+    <line x1="593" y1="381" x2="593" y2="405"/>
+    <line x1="601" y1="414" x2="631" y2="414"/>
+    <!-- 4 = f g b c -->
+    <line x1="663" y1="343" x2="663" y2="367"/>
+    <line x1="671" y1="374" x2="701" y2="374"/>
+    <line x1="709" y1="343" x2="709" y2="367"/>
+    <line x1="709" y1="381" x2="709" y2="405"/>
+  </g>
+  <!-- Colon: two dots cut in half at the seam -->
+  <g fill="#79c0ff">
+    <rect x="560" y="352" width="8" height="14" rx="3"/>
+    <rect x="560" y="382" width="8" height="14" rx="3"/>
+  </g>
+
+  <!-- Buttons centered in the gap below the screen, elongated, cut at the seam (half + full) -->
+  <path d="M560,478 H590 Q600,478 600,487 Q600,496 590,496 H560 Z" fill="#232c37" stroke="#30363d" stroke-width="2"/>
+  <rect x="640" y="478" width="96" height="18" rx="9" fill="#232c37" stroke="#30363d" stroke-width="2"/>
+
+  <!-- Seam (the cut) — drawn over the flush-cut left edges -->
+  <line x1="560" y1="285" x2="560" y2="525" stroke="#30363d" stroke-width="2"/>
+
+  <!-- Analog half (left): ticks + hour hand -->
+  <g stroke="#46566a" stroke-width="4" stroke-linecap="round">
+    <line x1="560" y1="306" x2="560" y2="293"/>
+    <line x1="511" y1="318.4" x2="504.5" y2="306.1"/>
+    <line x1="475.1" y1="354" x2="466.4" y2="346"/>
+    <line x1="461" y1="405" x2="448" y2="405"/>
+    <line x1="475.1" y1="456" x2="466.4" y2="464"/>
+    <line x1="511" y1="491.6" x2="504.5" y2="503.9"/>
+    <line x1="560" y1="504" x2="560" y2="517"/>
+  </g>
+  <line x1="560" y1="405" x2="495.9" y2="347.3" stroke="#58a6ff" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="560" cy="405" r="7" fill="#58a6ff"/>
 </svg>
