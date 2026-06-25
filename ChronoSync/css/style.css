@@ -136,7 +136,7 @@ main {
 }
 
 .photo-card.dragging { opacity: 0.45; }
-.photo-card.drag-over { outline: 2px dashed var(--clr-accent, #58A6FF); outline-offset: -2px; }
+.photo-card.drag-over { outline: 2px dashed var(--clr-primary, #58A6FF); outline-offset: -2px; }
 .photo-card[draggable="true"] .photo-card-header { cursor: grab; }
 
 .photo-card-header {
@@ -170,7 +170,7 @@ main {
   height: auto;
   max-height: 160px;
   object-fit: contain;
-  background: var(--clr-base, #0b1220);
+  background: var(--clr-bg, #0b1220);
 }
 
 .photo-label-config {
@@ -409,7 +409,7 @@ main {
 .mosaic-val {
   min-width: 2.6em;
   font-variant-numeric: tabular-nums;
-  color: var(--clr-text-muted, var(--clr-text));
+  color: var(--clr-muted, var(--clr-text));
 }
 
 .mosaic-x { opacity: .6; }
