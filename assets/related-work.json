@@ -1,0 +1,28 @@
+{
+  "global": {
+    "title": {
+      "en": "Citing and Related Work",
+      "es": "Referencias y trabajos relacionados"
+    },
+    "support": {
+      "intro": {
+        "en": "If this work was useful to you, consider giving a star to the {repo_link}:",
+        "es": "Si este trabajo te ha resultado útil, considera dar una estrella al {repo_link}:"
+      },
+      "repo": {
+        "url": "https://github.com/enheragu/image-tools",
+        "link_text": {
+          "en": "GitHub repository",
+          "es": "repositorio de GitHub"
+        }
+      }
+    },
+    "links": [],
+    "publication_keys": []
+  },
+  "tools": {
+    "Landing": {},
+    "HarrisShutter": {},
+    "ChronoSync": {}
+  }
+}
